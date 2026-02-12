@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Mise à jour élève</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WiCompta">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient) no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: var(--nav-gradient);
+            border-bottom: 3px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem 1rem;
+        }
+
+        #headerLogo {
+            height: 40px;
+            width: 40px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: white;
+            padding: 2px;
+        }
+
+        .etablissement-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            text-align: center;
+            font-weight: 800;
+            background: linear-gradient(to right, #1e3a8a, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 40px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .page-title-main {
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 30px 0;
+            padding-left: 20px;
+            border-left: 6px solid var(--accent-color);
+            background: rgba(255,255,255,0.5);
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            min-height: 400px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: #1e3a8a; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
+        
+        .abandonne { text-decoration: line-through; opacity: 0.6; background-color: #f1f5f9 !important; }
+        
+        @keyframes highlightAdd {
+            0% { background-color: #10b98133; }
+            100% { background-color: transparent; }
+        }
+        .new-entry { animation: highlightAdd 2s ease-out; border: 2px solid var(--accent-color) !important; }
+
+        .modal-refined { border-radius: 25px; overflow: hidden; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .modal-refined .modal-header { background: var(--nav-gradient); color: white; border: none; padding: 20px 30px; }
+        .modal-refined .modal-body { padding: 30px; }
+
+        footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 30px 0;
+            text-align: center;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+        }
+
+        #headerEtabName {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: #ffffff;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 20px;
+        }
+
+        .search-container { position: relative; }
+        .search-results { 
+            position: absolute; top: 100%; left: 0; right: 0; 
+            background: white; z-index: 1000; border-radius: 0 0 15px 15px; 
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;
+        }
+        .search-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-item:hover { background-color: #f8fafc; color: #1e3a8a; }
+
+        .user-badge {
+            background: rgba(255,255,255,0.15);
+            padding: 5px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .btn-logout {
+            color: #ff4d4d !important;
+            font-weight: 600;
+        }
+
+        /* Indicateur de synchro cloud FLOTTANT */
+        .sync-floating-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+            background: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 2px solid #fff;
+        }
+        #cloudStatus { font-size: 1.4rem; }
+        .sync-online { color: #10b981; }
+        .sync-offline { color: #f59e0b; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="" id="headerLogo" alt="Logo" class="me-2 d-none">
+                <span id="headerSalonName" class="fw-bold text-white">WiCompta</span>
+                <span id="headerEtabName" class="d-none"></span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link px-3" href="index.html"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active px-3" href="maj_eleve.html"><i class="bi bi-person-up me-2"></i>Mise à jour élève</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="finances.html"><i class="bi bi-wallet2 me-2"></i>Finance</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="documents.html"><i class="bi bi-file-earmark-pdf me-2"></i>Documents</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="config.html"><i class="bi bi-sliders me-2"></i>Paramètres</a></li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+                        <div class="user-badge border border-white-50">
+                            <i class="bi bi-person-circle me-2 text-info"></i>
+                            <span id="connectedRole" class="me-3">Chargement...</span>
+                            <a href="#" onclick="deconnexion()" class="btn-logout text-decoration-none">
+                                <i class="bi bi-power"></i>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="sync-floating-badge">
+        <i id="cloudStatus" class="bi bi-cloud-slash-fill sync-offline" title="Initialisation..."></i>
+    </div>
+
+    <div class="container">
+        <h1 id="displayEtablissement" class="etablissement-header">VOTRE ÉTABLISSEMENT</h1>
+        <h2 class="page-title-main">Mise à jour des informations élèves</h2>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-12 search-container mb-2">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 rounded-pill-start"><i class="bi bi-search"></i></span>
+                    <input type="text" id="mainSearch" class="form-control border-start-0 rounded-pill-end" placeholder="Rechercher un élève par son nom (tous cycles confondus)..." oninput="rechercheDynamique(this.value)">
+                </div>
+                <div id="searchResults" class="search-results d-none"></div>
+            </div>
+            
+            <div class="col-md-5">
+                <label class="form-label fw-bold">Cycle Scolaire</label>
+                <select id="filter_cycle" class="form-select" onchange="peuplerClasses()">
+                    <option value="">Sélectionner un cycle</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-bold">Classe</label>
+                <select id="filter_classe" class="form-select">
+                    <option value="">Sélectionner une classe</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100 rounded-pill" onclick="chargerListeElevesModale()"><i class="bi bi-search me-2"></i>Afficher</button>
+            </div>
+        </div>
+
+        <section class="settings-card">
+            <div id="emptyState" class="text-center text-muted mt-5">
+                <i class="bi bi-person-gear" style="font-size: 4rem; opacity: 0.3;"></i>
+                <p class="mt-3">Sélectionnez les critères ci-dessus ou utilisez la barre de recherche pour gérer un élève.</p>
+            </div>
+
+            <div id="searchResultDisplay" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-primary mb-0"><i class="bi bi-person-check me-2"></i>Fiche Élève</h4>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="fermerFiche()"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>NOM ET PRÉNOMS</th>
+                                <th>SEXE</th>
+                                <th>STATUT SOCIAL</th>
+                                <th class="text-end">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="searchTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal fade" id="modalListeEleves" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content modal-refined">
+                <div class="modal-header d-flex flex-column align-items-start">
+                    <div class="d-flex justify-content-between w-100">
+                        <h4 class="modal-title fw-bold" id="modalListeTitle">REGISTRE DE CLASSE</h4>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div id="statsRow" class="row g-2 w-100 mt-3">
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">Total</div><div class="stat-val fs-5" id="stat_total">0</div></div></div>
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">Filles</div><div class="stat-val fs-5 text-danger" id="stat_filles">0</div></div></div>
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">Garçons</div><div class="stat-val fs-5 text-primary" id="stat_garcons">0</div></div></div>
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">F.E.</div><div class="stat-val fs-5 text-success" id="stat_fe">0</div></div></div>
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">Orphelins</div><div class="stat-val fs-5 text-warning" id="stat_orphelins">0</div></div></div>
+                        <div class="col-md-2 col-4"><div class="stat-card py-2"><div class="stat-label">Standard</div><div class="stat-val fs-5 text-secondary" id="stat_standard">0</div></div></div>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="card mb-4 border-primary shadow-sm">
+                        <div class="card-body bg-light py-2">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-5">
+                                    <input type="text" id="new_eleve_nom" class="form-control form-control-sm" placeholder="NOM ET PRÉNOMS">
+                                </div>
+                                <div class="col-md-2">
+                                    <select id="new_eleve_sexe" class="form-select form-select-sm">
+                                        <option value="M">Masculin</option>
+                                        <option value="F">Féminin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="new_eleve_statut" class="form-select form-select-sm">
+                                        <option value="Standard">Standard</option>
+                                        <option value="FE">Fils/Fille Ens. (FE)</option>
+                                        <option value="Orphelin">Orphelin / Cas Social</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-success btn-sm w-100 fw-bold" onclick="ajouterNouvelEleveManuel()">
+                                        <i class="bi bi-plus-circle me-1"></i>AJOUTER
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>NOM ET PRÉNOMS</th>
+                                    <th>SEXE</th>
+                                    <th>STATUT SOCIAL</th>
+                                    <th class="text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="elevesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Fermer le registre</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalUpdateEleve" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-refined border">
+                <div class="modal-header bg-dark">
+                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-pencil-square me-2"></i>Mise à jour Élève</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_index">
+                    <input type="hidden" id="edit_class_id_hidden">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Nom et Prénoms</label>
+                        <input type="text" id="edit_nom" class="form-control fw-bold">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted">Sexe</label>
+                            <select id="edit_sexe" class="form-select">
+                                <option value="M">Masculin (M)</option>
+                                <option value="F">Féminin (F)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted">Statut Social</label>
+                            <select id="edit_statut" class="form-select">
+                                <option value="Standard">Standard</option>
+                                <option value="FE">Fils/Fille Enseignant (FE)</option>
+                                <option value="Orphelin">Orphelin / Cas Social</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-primary py-2 rounded-pill fw-bold" onclick="sauvegarderModif()"><i class="bi bi-check2-circle me-2"></i>METTRE À JOUR</button>
+                        <div class="row g-2">
+                            <div class="col-6"><button class="btn btn-outline-warning w-100 rounded-pill" onclick="abandonnerViaModale()">Abandon</button></div>
+                            <div class="col-6"><button class="btn btn-outline-danger w-100 rounded-pill" onclick="supprimerViaModale()">Supprimer</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="fw-bold text-dark">© 2026 WiCompta Platform</div>
+            <div class="text-muted small mb-2">Technologie de gestion scolaire sécurisée</div>
+            <div class="contact-info fw-bold text-primary">Conçu par <strong>Atizoun Plateny AMOUSSOU</strong> | DG Atizoun-DigiCom</div>
+            <div class="small text-muted">atizoun@gmail.com | 01 97 74 40 35</div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- GLOBAL VARIABLES & CONSTANTS ---
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        const IDENTITY_KEY = 'winTailor_identity';
+        
+        let currentClassId = "";
+        let activeAnnee = "2025-2026";
+
+        // --- CLOUD SYNC LOGIC ---
+        window.syncLocalToCloud = function() {
+            const dataToSync = {
+                settings: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+                students: JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}"),
+                master: JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}"),
+                config: JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}"),
+                identity: JSON.parse(localStorage.getItem(IDENTITY_KEY) || "{}")
+            };
+
+            // Ajout dynamique des records financiers par année
+            if (activeAnnee) {
+                const finKey = `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+                dataToSync[finKey] = JSON.parse(localStorage.getItem(finKey) || "{}");
+            }
+            
+            update(ref(db, 'cloud_storage/'), dataToSync)
+                .then(() => updateCloudIndicator(true))
+                .catch(() => updateCloudIndicator(false));
+        }
+
+        function updateCloudIndicator(online) {
+            const icon = document.getElementById('cloudStatus');
+            if(online) {
+                icon.className = "bi bi-cloud-check-fill sync-online";
+                icon.title = "Synchronisé en temps réel";
+            } else {
+                icon.className = "bi bi-cloud-slash-fill sync-offline";
+                icon.title = "Mode Hors-ligne / Erreur";
+            }
+        }
+
+        // Ecoute de l'état de connexion Firebase
+        onValue(ref(db, ".info/connected"), (snapshot) => {
+            updateCloudIndicator(snapshot.val() === true);
+        });
+
+        // Lecture automatique et mise à jour en temps réel depuis le cloud
+        onValue(ref(db, 'cloud_storage/'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if(data.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings));
+                if(data.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students));
+                if(data.master) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.master));
+                if(data.config) localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config));
+                if(data.identity) localStorage.setItem(IDENTITY_KEY, JSON.stringify(data.identity));
+                
+                // Records financiers
+                Object.keys(data).forEach(key => {
+                    if (key.startsWith(FINANCE_KEY)) {
+                        localStorage.setItem(key, JSON.stringify(data[key]));
+                    }
+                });
+
+                // Rafraîchissement discret
+                loadIdentity();
+                initialiserFiltres();
+                if(currentClassId) refreshCurrentList(currentClassId);
+            }
+        });
+
+        // --- UI LOGIC ---
+        window.onload = function() {
+            verifierSession();
+            loadIdentity();
+            initialiserFiltres();
+        };
+
+        window.verifierSession = function() {
+            const session = JSON.parse(localStorage.getItem(AUTH_KEY));
+            const config = JSON.parse(localStorage.getItem(CONFIG_KEY));
+            if (!session || !session.isLoggedIn) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const roleKey = session.role;
+            let roleLabel = (config && config[roleKey]) ? config[roleKey].label : roleKey;
+            document.getElementById('connectedRole').textContent = roleLabel;
+        }
+
+        window.deconnexion = function() {
+            if(confirm("Voulez-vous vraiment vous déconnecter ?")) {
+                localStorage.removeItem(AUTH_KEY);
+                window.location.href = 'login.html';
+            }
+        }
+
+        window.loadIdentity = function() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const identityData = localStorage.getItem(IDENTITY_KEY);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const name = data.identification.nomEtab || "VOTRE ÉTABLISSEMENT";
+                activeAnnee = data.options.activeYear || (data.options.annees ? data.options.annees[0] : "2025-2026");
+                document.getElementById('displayEtablissement').textContent = (name + " " + activeAnnee).toUpperCase();
+                const headerEtab = document.getElementById('headerEtabName');
+                headerEtab.textContent = (name + " " + activeAnnee).toUpperCase();
+                headerEtab.classList.remove('d-none');
+            }
+            if (identityData) {
+                try {
+                    const data = JSON.parse(identityData);
+                    if (data.salonName) document.getElementById('headerSalonName').textContent = data.salonName;
+                    const logoImg = document.getElementById('headerLogo');
+                    if (data.logoUrl) { logoImg.src = data.logoUrl; logoImg.classList.remove('d-none'); }
+                } catch (e) {}
+            }
+        }
+
+        window.initialiserFiltres = function() {
+            const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const cycleSelect = document.getElementById('filter_cycle');
+            const currentVal = cycleSelect.value;
+            cycleSelect.innerHTML = '<option value="">Sélectionner un cycle</option>';
+            if (savedData && savedData.options.cycles) {
+                savedData.options.cycles.forEach(c => {
+                    if(c && c !== "Choisir...") {
+                        let opt = new Option(c, c);
+                        cycleSelect.add(opt);
+                    }
+                });
+            }
+            if(currentVal) cycleSelect.value = currentVal;
+        }
+
+        window.peuplerClasses = function() {
+            const selectedCycle = document.getElementById('filter_cycle').value;
+            const classeSelect = document.getElementById('filter_classe');
+            classeSelect.innerHTML = '<option value="">Sélectionner une classe</option>';
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            Object.keys(allStudents).forEach(id => {
+                if (id.startsWith(selectedCycle) && id.includes(activeAnnee)) {
+                    const parts = id.split('_');
+                    let opt = new Option(parts[1], id);
+                    classeSelect.add(opt);
+                }
+            });
+        }
+
+        window.rechercheDynamique = function(val) {
+            const container = document.getElementById('searchResults');
+            if (val.length < 2) { container.classList.add('d-none'); return; }
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            let results = [];
+            Object.keys(allStudents).forEach(classId => {
+                if (classId.includes(activeAnnee)) {
+                    allStudents[classId].forEach((s, idx) => {
+                        if (s.nom.toLowerCase().includes(val.toLowerCase())) {
+                            results.push({ ...s, classId, index: idx });
+                        }
+                    });
+                }
+            });
+            if (results.length > 0) {
+                container.innerHTML = results.slice(0, 10).map(r => `
+                    <div class="search-item" onclick="selectionnerEleve('${r.classId}', ${r.index})">
+                        <strong>${r.nom}</strong> <small class="text-muted">(${r.classId.split('_')[1]})</small>
+                    </div>
+                `).join('');
+                container.classList.remove('d-none');
+            } else {
+                container.innerHTML = '<div class="p-3 text-muted">Aucun élève trouvé</div>';
+                container.classList.remove('d-none');
+            }
+        }
+
+        window.selectionnerEleve = function(classId, index) {
+            document.getElementById('searchResults').classList.add('d-none');
+            document.getElementById('mainSearch').value = "";
+            document.getElementById('emptyState').classList.add('d-none');
+            const display = document.getElementById('searchResultDisplay');
+            display.classList.remove('d-none');
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const s = allStudents[classId][index];
+            currentClassId = classId; 
+            const tbody = document.getElementById('searchTableBody');
+            tbody.innerHTML = `
+                <tr class="${s.abandon ? 'abandonne' : ''}">
+                    <td class="fw-bold">${s.nom} <br><small class="text-muted">Classe: ${classId.split('_')[1]}</small></td>
+                    <td>${s.sexe}</td>
+                    <td><span class="badge bg-light text-dark border">${s.statut}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="ouvrirModaleUpdate(${index}, '${classId}')"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-warning mx-1" onclick="toggleAbandon(${index}, '${classId}')"><i class="bi bi-slash-circle"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="supprimerEleve(${index}, '${classId}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        window.fermerFiche = function() {
+            document.getElementById('searchResultDisplay').classList.add('d-none');
+            document.getElementById('emptyState').classList.remove('d-none');
+        }
+
+        window.chargerListeElevesModale = function() {
+            currentClassId = document.getElementById('filter_classe').value;
+            if (!currentClassId) { alert("Sélectionnez une classe"); return; }
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const students = allStudents[currentClassId] || [];
+            document.getElementById('modalListeTitle').innerText = "REGISTRE : " + currentClassId.split('_')[1].toUpperCase();
+            renderTable(students);
+            calculerStats(students);
+            new bootstrap.Modal(document.getElementById('modalListeEleves')).show();
+        }
+
+        window.ajouterNouvelEleveManuel = function() {
+            const nomInput = document.getElementById('new_eleve_nom');
+            const nom = nomInput.value.trim().toUpperCase();
+            if (!nom) { alert("Le nom est obligatoire"); return; }
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            if (!allStudents[currentClassId]) allStudents[currentClassId] = [];
+            allStudents[currentClassId].push({
+                nom, 
+                sexe: document.getElementById('new_eleve_sexe').value, 
+                statut: document.getElementById('new_eleve_statut').value, 
+                abandon: false 
+            });
+            allStudents[currentClassId].sort((a, b) => a.nom.localeCompare(b.nom));
+            localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+            nomInput.value = "";
+            window.syncLocalToCloud(); 
+            refreshCurrentList(currentClassId, nom);
+        }
+
+        window.renderTable = function(students, highlightNom = null) {
+            const tbody = document.getElementById('elevesTableBody');
+            tbody.innerHTML = "";
+            students.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                if (s.abandon) tr.classList.add('abandonne');
+                if (highlightNom && s.nom === highlightNom) tr.classList.add('new-entry');
+                tr.innerHTML = `
+                    <td class="fw-bold" style="cursor:pointer" onclick="ouvrirModaleUpdate(${idx})">${s.nom}</td>
+                    <td>${s.sexe}</td>
+                    <td><span class="badge bg-light text-dark border">${s.statut}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="ouvrirModaleUpdate(${idx})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-warning mx-1" onclick="toggleAbandon(${idx})"><i class="bi bi-slash-circle"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="supprimerEleve(${idx})"><i class="bi bi-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.calculerStats = function(students) {
+            document.getElementById('stat_total').textContent = students.length;
+            document.getElementById('stat_filles').textContent = students.filter(s => s.sexe === 'F').length;
+            document.getElementById('stat_garcons').textContent = students.filter(s => s.sexe === 'M').length;
+            document.getElementById('stat_fe').textContent = students.filter(s => s.statut === 'FE').length;
+            document.getElementById('stat_orphelins').textContent = students.filter(s => s.statut === 'Orphelin').length;
+            document.getElementById('stat_standard').textContent = students.filter(s => s.statut === 'Standard').length;
+        }
+
+        window.ouvrirModaleUpdate = function(index, classId = currentClassId) {
+            const students = JSON.parse(localStorage.getItem(STUDENTS_KEY))[classId];
+            const s = students[index];
+            document.getElementById('edit_index').value = index;
+            document.getElementById('edit_class_id_hidden').value = classId;
+            document.getElementById('edit_nom').value = s.nom;
+            document.getElementById('edit_sexe').value = s.sexe;
+            document.getElementById('edit_statut').value = s.statut;
+            new bootstrap.Modal(document.getElementById('modalUpdateEleve')).show();
+        }
+
+        window.sauvegarderModif = function() {
+            const index = document.getElementById('edit_index').value;
+            const classId = document.getElementById('edit_class_id_hidden').value;
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
+            const newNom = document.getElementById('edit_nom').value.toUpperCase();
+            allStudents[classId][index].nom = newNom;
+            allStudents[classId][index].sexe = document.getElementById('edit_sexe').value;
+            allStudents[classId][index].statut = document.getElementById('edit_statut').value;
+            allStudents[classId].sort((a, b) => a.nom.localeCompare(b.nom));
+            localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+            window.syncLocalToCloud();
+            bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
+            if(!document.getElementById('searchResultDisplay').classList.contains('d-none')) selectionnerEleve(classId, index);
+            refreshCurrentList(classId, newNom);
+        }
+
+        window.toggleAbandon = function(index, classId = currentClassId) {
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
+            allStudents[classId][index].abandon = !allStudents[classId][index].abandon;
+            localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+            window.syncLocalToCloud();
+            if(!document.getElementById('searchResultDisplay').classList.contains('d-none')) selectionnerEleve(classId, index);
+            refreshCurrentList(classId);
+        }
+
+        window.abandonnerViaModale = function() {
+            toggleAbandon(document.getElementById('edit_index').value, document.getElementById('edit_class_id_hidden').value);
+            bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
+        }
+
+        window.supprimerEleve = function(index, classId = currentClassId) {
+            if (confirm("Supprimer définitivement cet élève ?")) {
+                let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
+                allStudents[classId].splice(index, 1);
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+                window.syncLocalToCloud();
+                fermerFiche();
+                refreshCurrentList(classId);
+            }
+        }
+
+        window.supprimerViaModale = function() {
+            const index = document.getElementById('edit_index').value;
+            const classId = document.getElementById('edit_class_id_hidden').value;
+            bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
+            supprimerEleve(index, classId);
+        }
+
+        window.refreshCurrentList = function(classId = currentClassId, highlight = null) {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const students = allStudents[classId] || [];
+            renderTable(students, highlight);
+            calculerStats(students);
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) document.getElementById('searchResults').classList.add('d-none');
+        });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

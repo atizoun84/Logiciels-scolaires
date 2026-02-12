@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Configuration</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WiCompta">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar améliorée */
+        .navbar {
+            background: var(--nav-gradient);
+            border-bottom: 3px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem 1rem;
+        }
+
+        #headerLogo {
+            height: 40px;
+            width: 40px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: white;
+            padding: 2px;
+        }
+
+        /* BANDE ADMINISTRATIVE NAVBAR */
+        .admin-nav-banner {
+            flex-grow: 1;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            background: rgba(255,255,255,0.1);
+            margin: 0 20px;
+            padding: 5px 15px;
+            border-radius: 50px;
+            border: 1px dashed rgba(255,255,255,0.3);
+            display: none; 
+        }
+
+        /* Header dynamique */
+        .etablissement-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            text-align: center;
+            font-weight: 800;
+            background: linear-gradient(to right, #1e3a8a, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 40px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .page-title-main {
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 30px 0;
+            padding-left: 20px;
+            border-left: 6px solid var(--accent-color);
+            background: rgba(255,255,255,0.5);
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        /* Cartes de configuration */
+        .settings-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section-subtitle {
+            font-weight: 600;
+            color: #3b82f6;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-subtitle i {
+            color: var(--accent-color);
+        }
+
+        /* Inputs et listes */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+
+        .list-group-item {
+            border-radius: 12px !important;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s ease;
+        }
+
+        .list-group-item:hover {
+            transform: translateX(5px);
+            background-color: #f8fafc;
+        }
+
+        /* MODALE PRO RAFFINÉE */
+        .modal-refined { border-radius: 25px; overflow: hidden; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .modal-refined .modal-header { background: #1e3a8a; color: white; padding: 25px; border: none; }
+        .modal-refined .admin-badge { background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 50px; font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
+        
+        /* Pied de page */
+        footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 30px 0;
+            text-align: center;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+        }
+
+        .btn-save-anim { 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 50px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .btn-save-anim.success {
+            background-color: #ef4444 !important;
+            border-color: #ef4444 !important;
+            transform: scale(1.05);
+        }
+
+        .hidden-list { display: none; margin-top: 20px; animation: slideDown 0.3s ease-out; }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .exon-box {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 15px;
+            height: 100%;
+        }
+
+        #successOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .success-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transform: scale(0);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn { to { transform: scale(1); } }
+
+        #headerEtabName {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: #ffffff;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 20px;
+        }
+
+        .locked-info {
+            background-color: #f8fafc !important;
+            border-color: #3b82f6 !important;
+            font-weight: 600 !important;
+            color: #1e3a8a !important;
+            opacity: 0.8;
+        }
+
+        .badge-counter {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+
+        #cumulChargesContainer {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            border: 1px solid #ffeeba;
+        }
+
+        .maintenance-card {
+            border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+        }
+        
+        .cursor-pointer { cursor: pointer; }
+
+        /* Styles pour les nouveaux éléments de session */
+        .user-badge {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-logout {
+            color: #fca5a5;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .btn-logout:hover {
+            color: #ef4444;
+            transform: scale(1.1);
+        }
+
+        /* Firebase Status Indicator */
+        #firebaseStatus {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-size: 0.7rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .dot-offline { background: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div id="firebaseStatus">
+        <div id="statusDot" class="status-dot dot-offline"></div>
+        <span id="statusText">Initialisation...</span>
+    </div>
+
+    <div id="successOverlay" aria-live="polite">
+        <div class="success-content">
+            <div class="mb-3">
+                <i class="bi bi-check2-circle text-success" id="successIcon" style="font-size: 5rem;" aria-hidden="true"></i>
+            </div>
+            <h3 class="fw-bold" id="successTitle">Configuration Mise à Jour</h3>
+            <div class="text-muted" id="successMsg">Vos modifications ont été enregistrées avec succès.</div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="" id="headerLogo" alt="Logo" class="me-2 d-none">
+                <span id="headerSalonName" class="fw-bold text-white">WiCompta</span>
+                <span id="headerEtabName" class="d-none"></span>
+            </a>
+            
+            <div id="adminNavBanner" class="admin-nav-banner"></div>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link px-3" href="index.html"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="maj_eleve.html"><i class="bi bi-person-up me-2"></i>Mise à jour élève</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="finances.html"><i class="bi bi-wallet2 me-2"></i>Finance</a></li>
+                    <li class="nav-item"><a class="nav-link active px-3" href="config.html"><i class="bi bi-sliders me-2"></i>Paramètres</a></li>
+                    <li class="nav-item ms-lg-3 py-2 py-lg-0">
+                        <div class="user-badge">
+                            <i class="bi bi-person-circle me-2 text-accent"></i>
+                            <span id="displayUserRole" class="me-3 small">...</span>
+                            <a href="#" onclick="logout()" class="btn-logout text-decoration-none" title="Déconnexion">
+                                <i class="bi bi-power fs-5"></i>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" id="mainContent">
+        <h1 id="displayEtablissement" class="etablissement-header">VOTRE ÉTABLISSEMENT</h1>
+        <h2 class="page-title-main">Panneau de Configuration</h2>
+
+        <section class="settings-card">
+            <form id="settingsForm">
+                <div class="row g-4">
+                    <h5 class="section-subtitle"><i class="bi bi-info-circle"></i>Identification de la Structure</h5>
+                    <div class="col-md-4"><label class="form-label small text-muted">Pays</label><input type="text" id="id_pays" class="form-control" placeholder="Bénin" onchange="saveToLocalStorage()"></div>
+                    <div class="col-md-4"><label class="form-label small text-muted">Département</label><input type="text" id="id_dept" class="form-control" placeholder="Littoral" onchange="saveToLocalStorage()"></div>
+                    <div class="col-md-4"><label class="form-label small text-muted">Commune</label><input type="text" id="id_commune" class="form-control" placeholder="Cotonou" onchange="saveToLocalStorage()"></div>
+                    <div class="col-md-8"><label class="form-label small text-muted">Nom Officiel</label><input type="text" class="form-control" id="inputEtablissement" oninput="updateFullTitle()" onchange="saveToLocalStorage()"></div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Année Académique</label>
+                        <div class="input-group">
+                            <select class="form-select" id="list_annee" onchange="updateFullTitle(); handleYearChange();"><option value="">Choisir...</option><option>2025-2026</option></select>
+                            <button class="btn btn-outline-danger" type="button" onclick="supprimerOption('list_annee')"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-primary" type="button" onclick="ajouterOption('list_annee', 'Année Scolaire')"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-5 opacity-25">
+
+                <div class="row g-4">
+                    <h5 class="section-subtitle"><i class="bi bi-person-badge"></i>Administration & Signatures</h5>
+                    <div class="col-md-6"><label class="form-label small text-muted">Comptable Responsable</label><input type="text" id="id_comptable" class="form-control" onchange="saveToLocalStorage()"></div>
+                    <div class="col-md-6"><label class="form-label small text-muted">Signature Autorisée</label><input type="file" class="form-control" accept="image/*"></div>
+                </div>
+
+                <hr class="my-5 opacity-25">
+
+                <div class="row g-4">
+                    <h5 class="section-subtitle"><i class="bi bi-mortarboard"></i>Gestion des Classes & Cycles</h5>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Type de Cycle</label>
+                        <div class="input-group">
+                            <select class="form-select" id="list_cycle" onchange="updateExonSelects()"><option value="">Choisir...</option></select>
+                            <button class="btn btn-outline-danger" type="button" onclick="supprimerOption('list_cycle')"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-primary" type="button" onclick="ajouterOption('list_cycle', 'Cycle')"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Désignation Classe</label>
+                        <div class="input-group">
+                            <select class="form-select" id="list_classe"><option value="">Choisir...</option></select>
+                            <button class="btn btn-outline-danger" type="button" onclick="supprimerOption('list_classe')"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-primary" type="button" onclick="ajouterOption('list_classe', 'Classe')"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Fichier Élèves (Excel/CSV)</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelInput" accept=".xlsx, .xls, .csv">
+                            <button type="button" class="btn btn-primary" onclick="importerFichier()">Importer Liste</button>
+                        </div>
+                        <small class="text-primary fw-bold" style="font-size: 0.65rem;">Charger avant de créer la classe.</small>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center bg-light p-3 rounded-4 border">
+                        <span class="text-muted small fw-bold">Étape : Sélectionnez Cycle/Classe + Importer Excel →</span>
+                        <div>
+                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 me-2 shadow-sm" onclick="ajouterClasseAListe()"><i class="bi bi-plus-circle me-2"></i>Créer la Classe</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="toggleVisibility('listClassesArea')">Aperçu <span class="badge-counter" id="countClasses">0</span></button>
+                        </div>
+                    </div>
+                    
+                    <div id="listClassesArea" class="hidden-list col-12">
+                        <div class="list-group shadow-sm" id="container_classes"></div>
+                    </div>
+                </div>
+
+                <hr class="my-5 opacity-25">
+
+                <div class="row g-4">
+                    <h5 class="section-subtitle"><i class="bi bi-currency-exchange"></i>Configuration Tarifaire (FCFA)</h5>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Cycle concerné</label>
+                        <select class="form-select" id="charge_cycle_select" onchange="updateChargeClassesSelect()"></select>
+                    </div>
+                    <div class="col-md-4"><label class="form-label small text-muted">Libellé du Frais</label><input type="text" id="charge_nom" class="form-control" placeholder="ex: Scolarité"></div>
+                    <div class="col-md-4"><label class="form-label small text-muted">Prix Unitaire</label><input type="number" id="charge_montant" class="form-control" placeholder="0"></div>
+                    
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label small text-muted">Cible précise (Application du frais)</label>
+                        <div class="d-flex align-items-center gap-3 bg-light p-3 rounded-3 border mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="chargeCibleType" id="cibleTous" value="tous" checked onclick="toggleChargeCibleSelect()">
+                                <label class="form-check-label small fw-bold" for="cibleTous">Toutes les classes du cycle sélectionné</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="chargeCibleType" id="cibleClasses" value="classes" onclick="toggleChargeCibleSelect()">
+                                <label class="form-check-label small fw-bold" for="cibleClasses">Classes spécifiques du cycle</label>
+                            </div>
+                        </div>
+                        <select id="charge_classes_select" class="form-select" multiple style="display: none; height: 100px; font-size: 0.8rem;"></select>
+                    </div>
+
+                    <div class="col-12 text-center mt-3">
+                        <button type="button" class="btn btn-primary px-5 rounded-pill shadow-sm" onclick="ajouterCharge()">Ajouter le Tarif à la grille</button>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-between align-items-center mt-3">
+                        <div id="cumulChargesContainer">Cumul Total : <span id="cumulChargesValeur">0</span> FCFA</div>
+                        <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" onclick="toggleVisibility('listChargesArea')"><i class="bi bi-eye me-1"></i>Grille tarifaire (<span id="countCharges">0</span>)</button>
+                    </div>
+
+                    <div id="listChargesArea" class="hidden-list col-12">
+                        <div class="list-group shadow-sm" id="container_charges"></div>
+                    </div>
+                </div>
+
+                <hr class="my-5 opacity-25">
+
+                <div class="row g-4">
+                    <h5 class="section-subtitle"><i class="bi bi-percent"></i>Politique d'Exonération</h5>
+                    <div class="col-md-4"><label class="form-label small text-muted">Cycle Cible</label><select class="form-select" id="exon_cycle_select"></select></div>
+                    <div class="col-md-4"><label class="form-label small text-muted">Frais Concerné</label><select class="form-select" id="exon_charge_select"></select></div>
+                    
+                    <div class="col-md-4">
+                        <div class="exon-box">
+                            <label class="fw-bold small mb-3">Critère Genre</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="exSexeM"><label class="form-check-label">Garçons</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="exSexeF"><label class="form-check-label">Filles</label></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="exon-box">
+                            <label class="fw-bold small mb-3">Critère Social / Professionnel</label>
+                            <div class="d-flex flex-wrap gap-5">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="exStatutE"><label class="form-check-label">FE Fils ou fille d'enseignant</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="exStatutS"><label class="form-check-label">Statut Standard</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="exStatutO"><label class="form-check-label">Cas Social / Orphelin</label></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center mt-4">
+                        <button type="button" class="btn btn-success px-5 rounded-pill shadow-sm fw-bold" onclick="validerRegleExon()"><i class="bi bi-check-circle me-2"></i>Appliquer la règle</button>
+                        <div class="mt-2"><button type="button" class="btn btn-sm btn-light" onclick="toggleVisibility('listExonArea')">Voir historique (<span id="countExon">0</span>)</button></div>
+                    </div>
+                    
+                    <div id="listExonArea" class="hidden-list col-12">
+                        <div class="list-group shadow-sm" id="container_exons"></div>
+                    </div>
+                </div>
+
+                <hr class="my-5 opacity-25">
+                <div class="row g-4 maintenance-card p-4 rounded-4">
+                    <h5 class="section-subtitle"><i class="bi bi-database-gear"></i>Maintenance & Sauvegarde</h5>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-primary w-100 rounded-pill" onclick="exporterDonneesJSON()">
+                            <i class="bi bi-download me-2"></i>Exporter Backup
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="restoreFile" class="btn btn-outline-info w-100 rounded-pill mb-0">
+                            <i class="bi bi-upload me-2"></i>Importer Backup
+                        </label>
+                        <input type="file" id="restoreFile" class="d-none" accept=".json" onchange="restaurerDonneesJSON(this)">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-danger w-100 rounded-pill" onclick="reinitialiserApplication()">
+                            <i class="bi bi-trash3 me-2"></i>Reset Application
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-5 text-center">
+                    <button type="button" id="mainLockBtn" class="btn btn-primary btn-lg px-5 py-3 btn-save-anim shadow" onclick="handleLock(this)">
+                        <i class="bi bi-lock-fill me-2"></i>SAUVEGARDER ET VERROUILLER
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal fade" id="modalEleves" tabindex="-1" aria-labelledby="modalTitleClasse" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content modal-refined">
+                <div class="modal-header d-flex flex-column align-items-center text-center">
+                    <div class="admin-badge mb-2">Service de la Comptabilité Scolaire</div>
+                    <h4 class="modal-title fw-bold" id="modalTitleClasse">LISTE DES ÉLÈVES</h4>
+                    <div id="modalSubInfo" class="small opacity-75 mt-1">Effectifs par classe</div>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+                        <div class="text-muted small"><i class="bi bi-info-circle me-1"></i> Liste officielle pour le calcul des frais.</div>
+                        <span class="badge bg-primary rounded-pill px-3" id="modalEffectifBadge">0 Élèves</span>
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-dark small text-uppercase">
+                                <tr>
+                                    <th class="ps-4 py-3">Nom et Prénoms</th>
+                                    <th>Sexe</th>
+                                    <th>Statut</th>
+                                    <th class="text-center pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableElevesBody" class="border-top-0"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">QUITTER LE REGISTRE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="fw-bold text-dark">© 2026 WiCompta Platform</div>
+            <div class="text-muted small mb-2">Technologie de gestion scolaire sécurisée</div>
+            <div class="contact-info fw-bold text-primary">Conçu par <strong>Atizoun Plateny AMOUSSOU</strong> | DG Atizoun-DigiCom</div>
+            <div class="small text-muted">atizoun@gmail.com | 01 97 74 40 35</div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Export pour usage global dans les scripts classiques
+        window.fbDB = db;
+        window.fbRef = ref;
+        window.fbSet = set;
+        window.fbUpdate = update;
+        window.fbOnValue = onValue;
+
+        // Monitoring de la connexion
+        const connectedRef = ref(db, ".info/connected");
+        onValue(connectedRef, (snap) => {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            if (snap.val() === true) {
+                dot.className = "status-dot dot-online";
+                text.innerText = "Cloud Synchronisé";
+                syncFromCloud(); // Charger les données dès que connecté
+            } else {
+                dot.className = "status-dot dot-offline";
+                text.innerText = "Mode Hors-ligne";
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script>
+        let isLocked = false;
+        let tempImportedData = []; 
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+
+        // --- SYNCHRONISATION CLOUD ---
+
+        function syncToCloud() {
+            if (!window.fbDB) return;
+            const data = {
+                settings: JSON.parse(localStorage.getItem(STORAGE_KEY)),
+                students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
+                masterData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY))
+            };
+            window.fbSet(window.fbRef(window.fbDB, 'config_global'), data)
+                .catch(e => console.error("Erreur Sync Cloud:", e));
+        }
+
+        function syncFromCloud() {
+            if (!window.fbDB) return;
+            window.fbOnValue(window.fbRef(window.fbDB, 'config_global'), (snapshot) => {
+                const cloudData = snapshot.val();
+                if (cloudData) {
+                    if (cloudData.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData.settings));
+                    if (cloudData.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(cloudData.students));
+                    if (cloudData.masterData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(cloudData.masterData));
+                    loadFromLocalStorage(true); // Recharger l'UI sans boucle infinie
+                }
+            }, { onlyOnce: true });
+        }
+
+        function getActiveYear() {
+            return document.getElementById('list_annee').value;
+        }
+
+        function handleYearChange() {
+            const annee = getActiveYear();
+            if(annee) {
+                updateFullTitle();
+                loadDataForYear(annee);
+                saveToLocalStorage();
+            }
+        }
+
+        function loadDataForYear(annee) {
+            const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+            if(master[annee]) {
+                document.getElementById('container_classes').innerHTML = master[annee].classesHTML || "";
+                document.getElementById('container_charges').innerHTML = master[annee].chargesHTML || "";
+                document.getElementById('container_exons').innerHTML = master[annee].exonsHTML || "";
+                
+                attachClassEvents();
+                updateCounters();
+                updateExonSelects();
+                updateChargeClassesSelect();
+            } else {
+                document.getElementById('container_classes').innerHTML = "";
+                document.getElementById('container_charges').innerHTML = "";
+                document.getElementById('container_exons').innerHTML = "";
+                updateCounters();
+            }
+        }
+
+        function attachClassEvents() {
+            document.querySelectorAll('#container_classes .list-group-item').forEach(item => {
+                const id = item.getAttribute('data-class-id');
+                if(!id) return;
+                const parts = id.split('_');
+                item.onclick = (e) => {
+                    if(e.target.closest('button')) return;
+                    ouvrirRegistreClasse(id, parts[1], parts[0]);
+                };
+            });
+        }
+
+        function updateFullTitle() {
+            const nom = document.getElementById('inputEtablissement').value;
+            const annee = getActiveYear();
+            const fullText = (nom + " " + (annee || "")).toUpperCase().trim();
+            document.getElementById('displayEtablissement').textContent = fullText || "VOTRE ÉTABLISSEMENT";
+            
+            const adminBanner = document.getElementById('adminNavBanner');
+            if(isLocked) {
+                adminBanner.innerHTML = `<i class="bi bi-shield-check me-2"></i> ${fullText}`;
+            }
+        }
+
+        function calculerCumulCharges() {
+            let total = 0;
+            const charges = document.querySelectorAll('#container_charges .charge-montant-val');
+            charges.forEach(span => {
+                const montant = parseInt(span.textContent.replace(/\s/g, '')) || 0;
+                total += montant;
+            });
+            document.getElementById('cumulChargesValeur').textContent = total.toLocaleString();
+        }
+
+        function showSuccess(msg = null, title = "Configuration Mise à Jour", isError = false) {
+            const overlay = document.getElementById('successOverlay');
+            const icon = document.getElementById('successIcon');
+            const titleEl = document.getElementById('successTitle');
+            const msgEl = document.getElementById('successMsg');
+            const mainContent = document.getElementById('mainContent');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = msg || "Vos modifications ont été enregistrées avec succès.";
+            
+            if(isError) {
+                icon.className = "bi bi-exclamation-triangle text-danger";
+                titleEl.className = "fw-bold text-danger";
+            } else {
+                icon.className = "bi bi-check2-circle text-success";
+                titleEl.className = "fw-bold text-success";
+            }
+
+            overlay.style.display = 'flex';
+            mainContent.setAttribute('inert', ''); 
+
+            setTimeout(() => { 
+                overlay.style.display = 'none'; 
+                mainContent.removeAttribute('inert');
+            }, 3000);
+        }
+
+        function updateCounters() {
+            document.getElementById('countClasses').innerText = document.getElementById('container_classes').children.length;
+            document.getElementById('countCharges').innerText = document.getElementById('container_charges').children.length;
+            document.getElementById('countExon').innerText = document.getElementById('container_exons').children.length;
+            calculerCumulCharges();
+        }
+
+        function saveToLocalStorage() {
+            const annee = getActiveYear();
+            const data = {
+                identification: {
+                    pays: document.getElementById('id_pays').value,
+                    dept: document.getElementById('id_dept').value,
+                    commune: document.getElementById('id_commune').value,
+                    nomEtab: document.getElementById('inputEtablissement').value,
+                    comptable: document.getElementById('id_comptable').value
+                },
+                options: {
+                    annees: Array.from(document.getElementById('list_annee').options).map(o => o.text),
+                    cycles: Array.from(document.getElementById('list_cycle').options).map(o => o.text),
+                    classes: Array.from(document.getElementById('list_classe').options).map(o => o.text),
+                    activeYear: annee
+                },
+                isLocked: isLocked
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+            if(annee) {
+                const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+                master[annee] = {
+                    classesHTML: document.getElementById('container_classes').innerHTML,
+                    chargesHTML: document.getElementById('container_charges').innerHTML,
+                    exonsHTML: document.getElementById('container_exons').innerHTML,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(master));
+            }
+            syncToCloud();
+        }
+
+        function loadFromLocalStorage(fromSync = false) {
+            const AUTH_KEY = 'wicompta_auth_session';
+            const session = JSON.parse(localStorage.getItem(AUTH_KEY));
+            if (!session || !session.isLoggedIn) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            const data = JSON.parse(saved);
+
+            document.getElementById('id_pays').value = data.identification.pays || "";
+            document.getElementById('id_dept').value = data.identification.dept || "";
+            document.getElementById('id_commune').value = data.identification.commune || "";
+            document.getElementById('inputEtablissement').value = data.identification.nomEtab || "";
+            document.getElementById('id_comptable').value = data.identification.comptable || "";
+            
+            const loadOpts = (id, list) => {
+                const select = document.getElementById(id);
+                if(!select || !list) return;
+                const currentVal = select.value;
+                select.innerHTML = "";
+                list.forEach(txt => { let o = document.createElement('option'); o.text = txt; select.add(o); });
+                select.value = currentVal;
+            };
+            loadOpts('list_annee', data.options.annees);
+            loadOpts('list_cycle', data.options.cycles);
+            loadOpts('list_classe', data.options.classes);
+
+            if(data.options.activeYear) {
+                document.getElementById('list_annee').value = data.options.activeYear;
+                loadDataForYear(data.options.activeYear);
+            }
+
+            updateFullTitle();
+            if (data.isLocked) handleLock(document.getElementById('mainLockBtn'), true);
+            else handleLock(document.getElementById('mainLockBtn'), false, true); 
+
+            updateExonSelects();
+            updateChargeClassesSelect();
+            updateCounters();
+        }
+
+        function ajouterOption(id, label) {
+            let val = prompt("Saisir " + label + " :");
+            if (val) {
+                let s = document.getElementById(id);
+                let o = document.createElement('option');
+                o.text = val; s.add(o); s.value = val;
+                if(id === 'list_cycle') {
+                    updateExonSelects();
+                    updateChargeClassesSelect();
+                }
+                saveToLocalStorage();
+                showSuccess();
+            }
+        }
+
+        function supprimerOption(id) {
+            let s = document.getElementById(id);
+            if (s.selectedIndex !== -1 && s.value !== "") {
+                if(confirm("Voulez-vous vraiment supprimer cette option ?")) {
+                    s.remove(s.selectedIndex);
+                    if(id === 'list_cycle') {
+                        updateExonSelects();
+                        updateChargeClassesSelect();
+                    }
+                    saveToLocalStorage();
+                }
+            }
+        }
+
+        function toggleVisibility(id) {
+            let el = document.getElementById(id);
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function updateExonSelects() {
+            const cycleSrc = document.getElementById('list_cycle');
+            const cycleDest = document.getElementById('exon_cycle_select');
+            const chargeCycleDest = document.getElementById('charge_cycle_select');
+            
+            if(cycleSrc && cycleDest) cycleDest.innerHTML = cycleSrc.innerHTML;
+            if(cycleSrc && chargeCycleDest) chargeCycleDest.innerHTML = cycleSrc.innerHTML;
+
+            const chargeDest = document.getElementById('exon_charge_select');
+            if(chargeDest) {
+                chargeDest.innerHTML = "<option value=''>Choisir un frais...</option>";
+                document.querySelectorAll('#container_charges strong').forEach(charge => {
+                    let opt = document.createElement('option');
+                    opt.text = charge.innerText;
+                    chargeDest.add(opt);
+                });
+            }
+        }
+
+        function toggleChargeCibleSelect() {
+            const isClasses = document.getElementById('cibleClasses').checked;
+            const select = document.getElementById('charge_classes_select');
+            select.style.display = isClasses ? 'block' : 'none';
+            if(isClasses) updateChargeClassesSelect();
+        }
+
+        function updateChargeClassesSelect() {
+            const select = document.getElementById('charge_classes_select');
+            const selectedCycle = document.getElementById('charge_cycle_select').value;
+            select.innerHTML = "";
+            
+            document.querySelectorAll('#container_classes .list-group-item').forEach(item => {
+                const classId = item.getAttribute('data-class-id');
+                const badgeEl = item.querySelector('.badge');
+                if(!badgeEl) return;
+                const cycle = badgeEl.innerText;
+                const label = item.querySelector('strong').innerText;
+                
+                if(!selectedCycle || cycle === selectedCycle) {
+                    let opt = document.createElement('option');
+                    opt.value = classId;
+                    opt.text = `${label}`;
+                    select.add(opt);
+                }
+            });
+        }
+
+        function importerFichier() {
+            const fileInput = document.getElementById('excelInput');
+            if (!fileInput.files.length) {
+                alert("Veuillez sélectionner un fichier avant d'importer.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    if(jsonData.length === 0) {
+                        showSuccess("Le fichier est vide ou illisible.", "Échec Importation", true);
+                        return;
+                    }
+
+                    let successCount = 0;
+                    tempImportedData = [];
+
+                    jsonData.forEach(row => {
+                        const nom = row["Nom et Prénoms"] || row["Nom"] || row["NOM"] || row["nom"];
+                        if (nom && nom.toString().trim() !== "") {
+                            let sexeRaw = row["Sexe"] || row["SEXE"] || row["sexe"] || "M";
+                            let s = sexeRaw.toString().toUpperCase().trim();
+                            let finalSexe = (s.startsWith('F') || s.includes('FEMININ')) ? 'F' : 'M';
+                            let statutRaw = row["Statut"] || row["STATUT"] || row["statut"] || "Standard";
+                            let st = statutRaw.toString().toUpperCase().trim();
+                            let finalStatut = "Standard";
+                            if (st.includes("FE") || st.includes("ENSEIGNANT")) {
+                                finalStatut = "FE";
+                            } else if (st.includes("CAS") || st.includes("ORPHELIN") || st.includes("SOCIAL")) {
+                                finalStatut = "Cas Social";
+                            }
+                            tempImportedData.push({ nom: nom.toString().trim(), sexe: finalSexe, statut: finalStatut });
+                            successCount++;
+                        }
+                    });
+
+                    if(successCount > 0) {
+                        showSuccess(`<b>${successCount}</b> élèves importés en mémoire.`, "Importation Réussie");
+                    } else {
+                        showSuccess("Aucun élève valide trouvé.", "Erreur de format", true);
+                    }
+                } catch (err) {
+                    showSuccess("Erreur lors de la lecture du fichier Excel.", "Erreur Technique", true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function ajouterClasseAListe() {
+            let cycle = document.getElementById('list_cycle').value;
+            let classe = document.getElementById('list_classe').value;
+            const annee = getActiveYear();
+
+            if(!annee) { alert("Veuillez sélectionner une Année Académique."); return; }
+            if(!cycle || !classe) { alert("Sélectionnez Cycle et Classe."); return; }
+            
+            const classId = `${cycle}_${classe}_${annee}`;
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            if(allStudents[classId]) { if(!confirm("Classe déjà existante pour cette année. Remplacer ?")) return; }
+
+            allStudents[classId] = [...tempImportedData];
+            localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+
+            let existingItem = document.querySelector(`[data-class-id="${classId}"]`);
+            if(existingItem) existingItem.remove();
+
+            let container = document.getElementById('container_classes');
+            let item = document.createElement('div');
+            item.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer";
+            item.setAttribute('data-class-id', classId);
+            item.innerHTML = `<div><i class="bi bi-door-closed me-2 text-primary"></i><span class="badge bg-secondary me-2">${cycle}</span><strong>${classe}</strong><span class="ms-3 text-muted small">(${allStudents[classId].length} élèves)</span></div><button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="supprimerClasse(this, '${classId}')"><i class="bi bi-trash"></i></button>`;
+            item.onclick = (e) => { if(!e.target.closest('button')) ouvrirRegistreClasse(classId, classe, cycle); };
+            container.appendChild(item);
+            
+            tempImportedData = []; 
+            document.getElementById('excelInput').value = "";
+            updateChargeClassesSelect();
+            saveToLocalStorage();
+            updateCounters();
+            showSuccess(`Classe ${classe} créée.`);
+        }
+
+        function supprimerClasse(btn, classId) {
+            if(confirm("Supprimer cette classe ?")) {
+                btn.closest('.list-group-item').remove();
+                let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                delete allStudents[classId];
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+                updateChargeClassesSelect();
+                saveToLocalStorage();
+                updateCounters();
+            }
+            event.stopPropagation();
+        }
+
+        function ouvrirRegistreClasse(id, label, cycle) {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const students = allStudents[id] || [];
+            document.getElementById('modalTitleClasse').innerText = `CLASSE : ${label}`;
+            document.getElementById('modalSubInfo').innerText = `Cycle : ${cycle}`;
+            document.getElementById('modalEffectifBadge').innerText = `${students.length} Élèves`;
+            let tbody = document.getElementById('tableElevesBody');
+            tbody.innerHTML = students.length === 0 ? "<tr><td colspan='4' class='text-center p-4 text-muted'>Aucun élève.</td></tr>" : "";
+            students.forEach((s, idx) => {
+                tbody.innerHTML += `<tr><td class="ps-4 fw-bold">${s.nom}</td><td><span class="badge ${s.sexe === 'F' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'}">${s.sexe}</span></td><td><span class="badge bg-light text-dark border">${s.statut}</span></td><td class="text-center pe-4"><button class="btn btn-sm text-danger border-0" onclick="retirerEleve('${id}', ${idx})"><i class="bi bi-x-circle"></i></button></td></tr>`;
+            });
+            new bootstrap.Modal(document.getElementById('modalEleves')).show();
+        }
+
+        function retirerEleve(classId, index) {
+            if(confirm("Retirer cet élève ?")) {
+                let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                allStudents[classId].splice(index, 1);
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+                const parts = classId.split('_');
+                ouvrirRegistreClasse(classId, parts[1], parts[0]);
+                document.querySelector(`[data-class-id="${classId}"] .text-muted`).textContent = `(${allStudents[classId].length} élèves)`;
+                saveToLocalStorage(); 
+            }
+        }
+
+        function ajouterCharge() {
+            let cycle = document.getElementById('charge_cycle_select').value;
+            let nom = document.getElementById('charge_nom').value;
+            let mt = document.getElementById('charge_montant').value;
+            if(!cycle) { alert("Sélectionnez d'abord un cycle."); return; }
+            if(!nom || !mt) { alert("Nom et montant requis."); return; }
+            
+            let cible = `Tout le cycle ${cycle}`;
+            if(document.getElementById('cibleClasses').checked) {
+                let selected = Array.from(document.getElementById('charge_classes_select').selectedOptions);
+                if(selected.length === 0) { alert("Sélectionnez au moins une classe."); return; }
+                cible = "Classes: " + selected.map(o => o.text).join(', ');
+            }
+
+            let container = document.getElementById('container_charges');
+            let item = document.createElement('div');
+            item.className = "list-group-item d-flex justify-content-between align-items-center";
+            item.innerHTML = `<div>
+                                <i class="bi bi-tag me-2 text-success"></i><strong>${nom}</strong> (${cycle}) : 
+                                <span class="badge bg-primary rounded-pill"><span class="charge-montant-val">${parseInt(mt)}</span> FCFA</span>
+                                <div class="small text-muted mt-1"><i class="bi bi-people me-1"></i>Cible: ${cible}</div>
+                              </div>
+                              <button type="button" class="btn btn-sm text-danger" onclick="supprimerCharge(this)"><i class="bi bi-trash"></i></button>`;
+            container.appendChild(item);
+
+            document.getElementById('charge_nom').value = ""; 
+            document.getElementById('charge_montant').value = "";
+            updateExonSelects();
+            saveToLocalStorage();
+            updateCounters();
+            showSuccess();
+        }
+
+        function supprimerCharge(btn) {
+            if(confirm("Supprimer ce tarif ?")) {
+                btn.parentElement.remove();
+                updateExonSelects();
+                saveToLocalStorage();
+                updateCounters();
+            }
+        }
+
+        function validerRegleExon() {
+            let cycle = document.getElementById('exon_cycle_select').value;
+            let charge = document.getElementById('exon_charge_select').value;
+            let sexes = [];
+            if(document.getElementById('exSexeM').checked) sexes.push("M");
+            if(document.getElementById('exSexeF').checked) sexes.push("F");
+            let statuts = [];
+            if(document.getElementById('exStatutE').checked) statuts.push("FE");
+            if(document.getElementById('exStatutS').checked) statuts.push("Standard");
+            if(document.getElementById('exStatutO').checked) statuts.push("Cas Social");
+
+            if(!cycle || !charge || !sexes.length || !statuts.length) { alert("Complétez tous les critères."); return; }
+
+            let container = document.getElementById('container_exons');
+            statuts.forEach(st => {
+                let item = document.createElement('div');
+                item.className = "list-group-item d-flex justify-content-between align-items-center";
+                item.innerHTML = `<div><i class="bi bi-shield-check me-2 text-info"></i><strong>${cycle} | ${charge}</strong> <small class="text-muted">(Genre: ${sexes.join('/')}, Statut: ${st})</small></div><button type="button" class="btn btn-sm text-danger" onclick="supprimerExon(this)"><i class="bi bi-trash"></i></button>`;
+                container.appendChild(item);
+            });
+            document.querySelectorAll('.exon-box input').forEach(i => i.checked = false);
+            saveToLocalStorage();
+            updateCounters();
+            showSuccess();
+        }
+
+        function supprimerExon(btn) { btn.parentElement.remove(); saveToLocalStorage(); updateCounters(); }
+
+        function handleLock(btn, forcedState = null, silent = false) {
+            // Mise à jour de l'état logique
+            if(forcedState !== null) {
+                isLocked = forcedState;
+            } else {
+                isLocked = !isLocked;
+            }
+
+            if(!silent && forcedState === null) {
+                saveToLocalStorage();
+                showSuccess(isLocked ? "Application Verrouillée" : "Édition Autorisée");
+            }
+
+            // Éléments à verrouiller/déverrouiller
+            const inputs = document.querySelectorAll('#settingsForm input, #settingsForm select, #settingsForm button:not(#mainLockBtn)');
+            const mainTitle = document.getElementById('displayEtablissement');
+            const adminBanner = document.getElementById('adminNavBanner');
+            
+            if (isLocked) {
+                btn.classList.add('success');
+                btn.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>DÉVERROUILLER L\'ÉDITION';
+                inputs.forEach(i => { 
+                    i.disabled = true; 
+                    i.classList.add('locked-info'); 
+                });
+                if(adminBanner) adminBanner.style.display = "block";
+                if(mainTitle) mainTitle.classList.add('d-none');
+                updateFullTitle();
+            } else {
+                btn.classList.remove('success');
+                btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>SAUVEGARDER ET VERROUILLER';
+                inputs.forEach(i => { 
+                    i.disabled = false; 
+                    i.classList.remove('locked-info'); 
+                });
+                if(adminBanner) adminBanner.style.display = "none";
+                if(mainTitle) mainTitle.classList.remove('d-none');
+            }
+        }
+
+        function exporterDonneesJSON() {
+            const backup = { 
+                settings: JSON.parse(localStorage.getItem(STORAGE_KEY)), 
+                students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
+                annualData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY)),
+                date: new Date().toISOString() 
+            };
+            const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `WiCompta_Full_Backup.json`;
+            a.click();
+        }
+
+        function restaurerDonneesJSON(input) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = JSON.parse(e.target.result);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings));
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students));
+                if(data.annualData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.annualData));
+                syncToCloud();
+                location.reload();
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        function reinitialiserApplication() { 
+            if(confirm("Supprimer TOUTES les données ? (Cette action videra aussi le cloud)")) { 
+                localStorage.clear(); 
+                if(window.fbDB) window.fbSet(window.fbRef(window.fbDB, 'config_global'), null);
+                location.reload(); 
+            } 
+        }
+
+        function logout() {
+            if(confirm("Voulez-vous vous déconnecter ?")) {
+                localStorage.removeItem('wicompta_auth_session');
+                window.location.href = 'login.html';
+            }
+        }
+
+        window.onload = () => {
+            loadFromLocalStorage();
+        };
+    </script>
+</body>
+</html>

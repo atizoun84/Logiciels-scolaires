@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Documents</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient) no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: var(--nav-gradient);
+            border-bottom: 3px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem 1rem;
+        }
+
+        #headerLogo {
+            height: 40px;
+            width: 40px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: white;
+            padding: 2px;
+        }
+
+        #headerEtabName {
+            font-size: 0.9rem;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 5px 15px;
+            border-radius: 50px;
+            margin-left: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-weight: 600;
+        }
+
+        .page-title-main {
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 30px 0;
+            padding-left: 20px;
+            border-left: 6px solid var(--accent-color);
+            background: rgba(255,255,255,0.5);
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Modal Raffiné avec Scroll */
+        .modal-refined { border-radius: 15px; overflow: hidden; border: none; }
+        .modal-header-pro { background: #f8fafc; border-bottom: 2px solid #1e3a8a; }
+        .modal-body-scroll { 
+            max-height: 70vh; 
+            overflow-y: auto; 
+            overflow-x: auto; 
+            background: white;
+            padding: 20px;
+        }
+        
+        /* Table Style Admin */
+        .table-admin { font-size: 0.75rem; border: 1px solid #000; min-width: 1000px; }
+        .table-admin th { background: #f1f5f9 !important; border: 1px solid #000 !important; text-transform: uppercase; text-align: center; vertical-align: middle; }
+        .table-admin td { border: 1px solid #000 !important; padding: 4px 6px; vertical-align: middle; }
+
+        #printArea { display: none; }
+
+        .user-badge {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+        }
+        .btn-logout {
+            color: #ff4d4d;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover {
+            color: #ff9999;
+            transform: scale(1.05);
+        }
+
+        /* Indicateur de synchro */
+        #syncStatus {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+            font-size: 0.7rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { 
+                display: block !important; 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                font-size: 10pt;
+                color: black;
+            }
+            .table-admin { 
+                width: 100% !important; 
+                min-width: 100% !important; 
+                border-collapse: collapse !important; 
+                font-size: 9pt;
+            }
+            .table-admin th, .table-admin td { border: 1pt solid black !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="syncStatus" class="no-print">
+        <i class="bi bi-cloud-check text-success"></i> Connecté au Cloud
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top no-print">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="" id="headerLogo" alt="Logo" class="me-2 d-none">
+                <span class="fw-bold text-white">WiCompta</span>
+                <span id="headerEtabName">ÉTABLISSEMENT</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link px-3" href="index.html"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="maj_eleve.html"><i class="bi bi-person-up me-2"></i>Mise à jour élève</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="finances.html"><i class="bi bi-wallet2 me-2"></i>Finance</a></li>
+                    <li class="nav-item"><a class="nav-link active px-3" href="documents.html"><i class="bi bi-file-earmark-arrow-down me-2"></i>Documents</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="config.html"><i class="bi bi-sliders me-2"></i>Paramètres</a></li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+                        <div class="d-flex align-items-center">
+                            <span class="user-badge me-2">
+                                <i class="bi bi-person-circle me-1"></i> <span id="displayRole">Chargement...</span>
+                            </span>
+                            <button onclick="logout()" class="btn btn-link btn-logout p-0" title="Déconnexion">
+                                <i class="bi bi-power fs-4"></i>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="page-title-main no-print">Génération de Documents Administratifs</h2>
+
+        <section class="settings-card no-print">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">1. Sélectionner l'Étendue (Cycle / Etab.)</label>
+                    <select id="filter_cycle" class="form-select rounded-pill" onchange="peuplerClasses()">
+                        <option value="">Choisir...</option>
+                        <option value="TOUT">TOUT L'ÉTABLISSEMENT</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">2. Sélectionner la Classe</label>
+                    <select id="filter_classe" class="form-select rounded-pill" onchange="toggleDownloadButton()">
+                        <option value="">Toutes les classes</option>
+                    </select>
+                </div>
+                <div class="col-12 mt-4 text-center">
+                    <button id="btnGenerer" class="btn btn-primary btn-lg rounded-pill px-5 shadow d-none" onclick="previsualiserEtat()">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Visualiser l'État de Droit Constaté
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="printArea"></div>
+
+    <div class="modal fade" id="modalPreview" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content modal-refined">
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold text-primary">Aperçu de l'État de Droit Constaté</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="px-4 py-2 bg-light border-bottom no-print">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <label class="small fw-bold text-muted">Lieu de signature (ex: Cotonou) :</label>
+                            <input type="text" id="inputLieuSignature" class="form-control form-control-sm rounded-pill" placeholder="Saisir le lieu...">
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-info text-dark">Réglage synchronisé</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-body modal-body-scroll" id="modalPrintContent">
+                </div>
+                <div class="modal-footer bg-light no-print">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-dark rounded-pill" onclick="imprimerPro()">
+                        <i class="bi bi-printer me-2"></i>Imprimer en PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="no-print">
+        <div class="container text-center">
+            <div class="fw-bold">© 2026 WiCompta Platform</div>
+            <div class="small text-muted">Conçu par Atizoun Plateny AMOUSSOU | 01 97 74 40 35</div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Clés Locales
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const FINANCE_KEY = 'wicompta_finance_records'; 
+        const SIG_PLACE_KEY = 'wicompta_sig_place';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+
+        // Synchronisation Firebase vers Local (Temps Réel)
+        function initSync() {
+            const syncIcon = document.querySelector('#syncStatus i');
+            const syncText = document.querySelector('#syncStatus span') || document.querySelector('#syncStatus');
+
+            const refs = [
+                { key: STORAGE_KEY, path: 'settings' },
+                { key: STUDENTS_KEY, path: 'students' },
+                { key: MASTER_DATA_KEY, path: 'master_data' },
+                { key: SIG_PLACE_KEY, path: 'ui_settings/sig_place' }
+            ];
+
+            refs.forEach(item => {
+                onValue(ref(db, item.path), (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        localStorage.setItem(item.key, typeof data === 'string' ? data : JSON.stringify(data));
+                        if(item.key === STORAGE_KEY) loadIdentity();
+                        if(item.key === SIG_PLACE_KEY) {
+                             const input = document.getElementById('inputLieuSignature');
+                             if(input) input.value = data;
+                        }
+                    }
+                });
+            });
+
+            // Gestion spéciale pour les finances (par année)
+            onValue(ref(db, 'finances'), (snapshot) => {
+                const allFinances = snapshot.val();
+                if (allFinances) {
+                    Object.keys(allFinances).forEach(yearKey => {
+                        localStorage.setItem(`${FINANCE_KEY}_${yearKey}`, JSON.stringify(allFinances[yearKey]));
+                    });
+                }
+            });
+
+            // Statut de connexion
+            const connectedRef = ref(db, ".info/connected");
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    syncIcon.className = "bi bi-cloud-check text-success";
+                } else {
+                    syncIcon.className = "bi bi-cloud-slash text-danger";
+                }
+            });
+        }
+
+        // Sauvegarde vers Firebase
+        window.saveToCloud = function(path, data) {
+            set(ref(db, path), data);
+        };
+
+        // Rendre les fonctions accessibles au scope global pour les appels onclick
+        window.peuplerClasses = function() {
+            const selectedExtent = document.getElementById('filter_cycle').value;
+            const tabularSelect = document.getElementById('filter_classe');
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const activeYear = savedData ? JSON.parse(savedData).options.activeYear : "";
+            
+            tabularSelect.innerHTML = '<option value="">Toutes les classes</option>';
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            
+            Object.keys(allStudents).forEach(id => {
+                const parts = id.split('_');
+                const cycle = parts[0];
+                const label = parts[1];
+                const annee = parts[2];
+
+                if (annee === activeYear) {
+                    if (selectedExtent === "TOUT" || cycle === selectedExtent) {
+                        tabularSelect.add(new Option(label, id));
+                    }
+                }
+            });
+            toggleDownloadButton();
+        };
+
+        window.previsualiserEtat = function() {
+            const settings = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const classId = document.getElementById('filter_classe').value;
+            const selectedExtent = document.getElementById('filter_cycle').value;
+            const lieuSignature = document.getElementById('inputLieuSignature').value || (settings ? settings.identification.commune : "");
+            const activeYear = settings ? settings.options.activeYear : "2025-2026";
+
+            // Sauvegarde du lieu vers le Cloud
+            saveToCloud('ui_settings/sig_place', lieuSignature);
+            localStorage.setItem(SIG_PLACE_KEY, lieuSignature);
+
+            const financeData = JSON.parse(localStorage.getItem(`${FINANCE_KEY}_${activeYear.replace(/\s+/g, '_')}`) || "{}");
+
+            let targetClasses = classId ? [classId] : Object.keys(allStudents).filter(cid => {
+                const parts = cid.split('_');
+                return parts[2] === activeYear && (selectedExtent === "TOUT" || parts[0] === selectedExtent);
+            });
+            
+            let html = `
+                <div style="font-family: 'Times New Roman', serif; color: black;">
+                    <div class="d-flex justify-content-between mb-4 border-bottom border-dark pb-2">
+                        <div style="font-size: 0.9rem;">
+                            <h5 class="fw-bold m-0">${settings ? settings.identification.nomEtab.toUpperCase() : ""}</h5>
+                            <p class="m-0">Département : ${settings ? settings.identification.dept : ""}</p>
+                            <p class="m-0">Commune : ${settings ? settings.identification.commune : ""}</p>
+                        </div>
+                        <div class="text-end" style="font-size: 0.8rem;">
+                            <p class="m-0">RÉPUBLIQUE DU BÉNIN</p>
+                            <p class="m-0 fw-bold">ANNÉE SCOLAIRE ${activeYear}</p>
+                        </div>
+                    </div>
+                    <h4 class="text-center fw-bold text-decoration-underline mb-4">ÉTAT DE DROIT CONSTATÉ</h4>
+            `;
+
+            targetClasses.forEach(cid => {
+                const students = allStudents[cid] || [];
+                const parts = cid.split('_');
+                const cycleName = parts[0];
+                const className = parts[1];
+                const totalG = students.filter(s => s.sexe === 'M').length;
+                const totalF = students.filter(s => s.sexe === 'F').length;
+
+                html += `
+                    <div class="mb-5">
+                        <div class="d-flex justify-content-between align-items-end mb-2">
+                            <h6 class="fw-bold mb-0">Classe de : ${className} (${cycleName})</h6>
+                            <table class="table-admin" style="width:150px; min-width:150px; margin-bottom:0;">
+                                <tr>
+                                    <th style="background:#e2e8f0 !important; font-weight:bold;">G</th>
+                                    <th style="background:#e2e8f0 !important; font-weight:bold;">F</th>
+                                    <th style="background:#e2e8f0 !important; font-weight:bold;">T</th>
+                                </tr>
+                                <tr><td class="text-center">${totalG}</td><td class="text-center">${totalF}</td><td class="text-center">${students.length}</td></tr>
+                            </table>
+                        </div>
+                        <table class="table table-admin">
+                            <thead>
+                                <tr style="background:#e2e8f0 !important;">
+                                    <th style="width:30px; font-weight:bold;">N°</th>
+                                    <th style="font-weight:bold;">Nom et Prénoms</th>
+                                    <th style="width:30px; font-weight:bold;">Sxe</th>
+                                    <th style="width:60px; font-weight:bold;">Statut</th>
+                                    <th style="width:80px; font-weight:bold;">Droit Dû</th>
+                                    <th style="font-weight:bold;">Paiements par charges / Historique</th>
+                                    <th style="width:80px; font-weight:bold;">Total Payé</th>
+                                    <th style="width:80px; font-weight:bold;">RESTE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                students.forEach((s, idx) => {
+                    const fin = getStudentFinance(s, cid);
+                    const uniqueId = `${cid}_${s.nom}_${idx}`;
+                    const record = financeData[uniqueId];
+                    const paid = record?.paid || 0;
+                    
+                    let detailsHtml = '';
+                    if (record && record.chargesPaid) {
+                        const chargesPayees = Object.entries(record.chargesPaid)
+                            .filter(([nom, amt]) => amt > 0)
+                            .map(([nom, amt]) => `<span style="display:inline-block; background:#f1f5f9; padding:1px 4px; margin:1px; border-radius:3px;">${nom}: ${amt.toLocaleString()}</span>`)
+                            .join(' ');
+                        if (chargesPayees) detailsHtml += `<div class="mb-1"><strong>Détails:</strong> ${chargesPayees}</div>`;
+                    }
+
+                    if (record && record.history && record.history.length > 0) {
+                        const hist = record.history.map(h => 
+                            `<span style="font-size:0.65rem; color:#666;">${h.date} (${h.amount > 0 ? '+' : ''}${h.amount})</span>`
+                        ).join(' | ');
+                        detailsHtml += `<div style="border-top:1px solid #eee; padding-top:2px;">${hist}</div>`;
+                    }
+
+                    if (!detailsHtml) detailsHtml = '<span class="text-muted italic">- Aucun versement -</span>';
+
+                    html += `
+                        <tr>
+                            <td class="text-center">${(idx + 1).toString().padStart(2, '0')}</td>
+                            <td class="fw-bold">${s.nom}</td>
+                            <td class="text-center">${s.sexe}</td>
+                            <td class="text-center small">${s.statut}</td>
+                            <td class="text-end">${fin.expected.toLocaleString()}</td>
+                            <td>${detailsHtml}</td>
+                            <td class="text-end fw-bold">${paid.toLocaleString()}</td>
+                            <td class="text-end fw-bold ${fin.expected - paid > 0 ? 'text-danger' : 'text-success'}">${(fin.expected - paid).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table></div>`;
+            });
+
+            const dateLongue = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
+            html += `
+                    <div class="mt-5 d-flex justify-content-between">
+                        <div class="small text-muted italic">Généré le : ${dateLongue}</div>
+                        <div class="text-center" style="width: 280px;">
+                            <p class="m-0">Fait à <strong>${lieuSignature}</strong>, le ${new Date().toLocaleDateString('fr-FR', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                            <p class="fw-bold mt-2 text-decoration-underline">Le Comptable</p>
+                            <br><br><br>
+                            <p class="fw-bold">${settings ? settings.identification.comptable.toUpperCase() : ""}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalPrintContent').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('modalPreview')).show();
+        };
+
+        // Initialisation au chargement
+        initSync();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const SIG_PLACE_KEY = 'wicompta_sig_place';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+
+        window.onload = function() {
+            checkAuth();
+            loadIdentity();
+            peuplerCycles(); 
+            const savedPlace = localStorage.getItem(SIG_PLACE_KEY);
+            if(savedPlace) document.getElementById('inputLieuSignature').value = savedPlace;
+        };
+
+        function checkAuth() {
+            const session = JSON.parse(localStorage.getItem(AUTH_KEY));
+            const config = JSON.parse(localStorage.getItem(CONFIG_KEY));
+            if (!session || !session.isLoggedIn) {
+                window.location.href = 'login.html';
+                return;
+            }
+            let roleLabel = session.role;
+            if (config && config[session.role]) {
+                roleLabel = config[session.role].label;
+            } else {
+                const defaults = { comptable: "Admin", agent: "Agent", utilisateur: "Utilisateur" };
+                roleLabel = defaults[session.role] || session.role;
+            }
+            document.getElementById('displayRole').textContent = roleLabel;
+        }
+
+        function logout() {
+            if(confirm("Voulez-vous vraiment vous déconnecter ?")) {
+                localStorage.removeItem(AUTH_KEY);
+                window.location.href = 'login.html';
+            }
+        }
+
+        function loadIdentity() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const identityData = localStorage.getItem('winTailor_identity');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const name = data.identification.nomEtab || "ÉTABLISSEMENT";
+                const annee = data.options.activeYear || (data.options.annees ? data.options.annees[0] : "2025-2026");
+                document.getElementById('headerEtabName').textContent = `${name} | ${annee}`.toUpperCase();
+            }
+            if (identityData) {
+                try {
+                    const data = JSON.parse(identityData);
+                    const logoImg = document.getElementById('headerLogo');
+                    if (data.logoUrl) { logoImg.src = data.logoUrl; logoImg.classList.remove('d-none'); }
+                } catch (e) { console.error(e); }
+            }
+        }
+
+        function peuplerCycles() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const cycleSelect = document.getElementById('filter_cycle');
+            if(savedData) {
+                const data = JSON.parse(savedData);
+                if(data.options && data.options.cycles) {
+                    data.options.cycles.forEach(c => {
+                        if(c && c !== "Choisir...") {
+                            let opt = new Option(c, c);
+                            cycleSelect.add(opt);
+                        }
+                    });
+                }
+            }
+        }
+
+        function toggleDownloadButton() {
+            const cycle = document.getElementById('filter_cycle').value;
+            const btn = document.getElementById('btnGenerer');
+            if (cycle) btn.classList.remove('d-none');
+            else btn.classList.add('d-none');
+        }
+
+        function getStudentFinance(s, classId) {
+            const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+            const annee = classId.split('_')[2];
+            const yearData = master[annee];
+            if (!yearData) return { expected: 0, nature: "Erreur config", charges: [] };
+
+            const cycle = classId.split('_')[0];
+            const classeLabel = classId.split('_')[1];
+            let chargesDetaillees = [];
+            let natureExo = [];
+
+            const parser = new DOMParser();
+            const chargesDoc = parser.parseFromString(yearData.chargesHTML || "", "text/html");
+            chargesDoc.querySelectorAll('.list-group-item').forEach(cItem => {
+                const nomElement = cItem.querySelector('strong');
+                if(!nomElement) return;
+                const nom = nomElement.innerText.replace(' :', '').trim();
+                const montant = parseInt(cItem.querySelector('.charge-montant-val')?.textContent.replace(/\D/g, '') || 
+                                         cItem.querySelector('.badge')?.textContent.replace(/\D/g, '')) || 0;
+                const cibleText = cItem.querySelector('.small.text-muted')?.innerText || "";
+                let estCible = false;
+                if (cibleText.includes(`Tout le cycle ${cycle}`) || cibleText.includes("Tout le cycle")) estCible = true;
+                else if (cibleText.includes("Classes:") && cibleText.includes(classeLabel)) estCible = true;
+                if (estCible) chargesDetaillees.push({ nom, montantInitial: montant, montantAttendu: montant, exo: 0 });
+            });
+
+            const exonsDoc = parser.parseFromString(yearData.exonsHTML || "", "text/html");
+            exonsDoc.querySelectorAll('.list-group-item').forEach(item => {
+                const ruleHeader = item.querySelector('strong').innerText; 
+                const metaText = item.querySelector('small').innerText; 
+                const ruleParts = ruleHeader.split('|');
+                const ruleCycle = ruleParts[0].trim();
+                const ruleCharge = ruleParts[1].trim();
+
+                if (ruleCycle === cycle) {
+                    const isSexeMatch = metaText.includes(`Genre: ${s.sexe}`) || metaText.includes(`/${s.sexe}`) || metaText.includes(`${s.sexe}/`);
+                    const isStatutMatch = metaText.includes(`Statut: ${s.statut}`);
+                    if (isSexeMatch && isStatutMatch) {
+                        let target = chargesDetaillees.find(c => c.nom === ruleCharge);
+                        if (target) { target.exo = target.montantInitial; target.montantAttendu = 0; natureExo.push(target.nom); }
+                    }
+                }
+            });
+
+            const expectedTotal = chargesDetaillees.reduce((sum, c) => sum + c.montantAttendu, 0);
+            return { expected: expectedTotal, charges: chargesDetaillees, nature: natureExo.length > 0 ? natureExo.join(', ') : "Aucune" };
+        }
+
+        function imprimerPro() {
+            const content = document.getElementById('modalPrintContent').innerHTML;
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = content;
+            setTimeout(() => { window.print(); }, 500);
+        }
+    </script>
+</body>
+</html>

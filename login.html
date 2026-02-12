@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Connexion</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/1e3a8a/ffffff?text=WC">
+    
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIldpQ29tcHRhIiwKICAic2hvcnRfbmFtZSI6ICJXaUNvbXB0YSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjhmYWZjIiwKICAidGhlbWVfY29sb3IiOiAiIzFlM2E4YSIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vdmlhLnBsYWNlaG9sZGVyLmNvbS8xOTIvMWUzYThhL2ZmZmZmZj90ZXh0PVdDIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9LAogICAgewogICAgICAic3JjIjogImh0dHBzOi8vdmlhLnBsYWNlaG9sZGVyLmNvbS81MTIvMWUzYThhL2ZmZmZmZj90ZXh0PVdDIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .brand-logo {
+            color: #1e3a8a;
+            font-weight: 700;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-login {
+            background: var(--nav-gradient);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 58, 138, 0.3);
+            color: white;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-group-text {
+            border-radius: 0 10px 10px 0;
+            background: white;
+            cursor: pointer;
+            border-left: none;
+        }
+        .form-control-password {
+            border-right: none;
+        }
+        .btn-settings {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        .btn-settings:hover {
+            color: #1e3a8a;
+        }
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+        .modal-header {
+            background: var(--nav-gradient);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        .role-edit-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        #syncStatus {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card text-center">
+        <div class="brand-logo">
+            <i class="bi bi-shield-lock-fill me-2"></i>WiCompta
+        </div>
+        
+        <form id="loginForm" class="text-start">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Rôle</label>
+                <select id="userRole" class="form-select" required>
+                    <option value="">Sélectionnez votre rôle</option>
+                    <option value="comptable">Chargement...</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Mot de passe</label>
+                <div class="input-group">
+                    <input type="password" id="password" class="form-control form-control-password" placeholder="••••••••" required>
+                    <span class="input-group-text toggle-password" data-target="password">
+                        <i class="bi bi-eye"></i>
+                    </span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-login w-100">
+                Se connecter
+            </button>
+            <div id="errorMsg" class="text-danger small mt-3 text-center d-none">
+                Mot de passe incorrect pour ce rôle.
+            </div>
+        </form>
+
+        <button class="btn btn-settings" onclick="checkAdminBeforeSettings()">
+            <i class="bi bi-gear-fill me-1"></i> Modifier les mots de passe
+        </button>
+    </div>
+
+    <div id="syncStatus" class="bg-secondary text-white">Initialisation...</div>
+
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configuration des Accès</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p class="text-muted small mb-4">Modifiez les libellés et les mots de passe des différents rôles.</p>
+                    <div id="rolesList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-login" onclick="saveSettings()">Enregistrer les modifications</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        // --- CONFIGURATION FIREBASE ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, enableLogging } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const configRef = ref(db, 'app_config/creds');
+
+        // --- LOGIQUE DE SYNCHRONISATION ---
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        const defaultConfig = {
+            comptable: { label: "Comptable (Admin)", pass: "admin123", redirect: "index.html" },
+            agent: { label: "Agent de recouvrement", pass: "agent123", redirect: "finances.html" },
+            utilisateur: { label: "Utilisateur", pass: "user123", redirect: "maj_eleve.html" }
+        };
+
+        let currentConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || defaultConfig;
+
+        // Écoute en temps réel de la base Cloud
+        onValue(configRef, (snapshot) => {
+            const data = snapshot.val();
+            const statusEl = document.getElementById('syncStatus');
+            
+            if (data) {
+                currentConfig = data;
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(data));
+                updateRoleSelect();
+                statusEl.innerHTML = '<i class="bi bi-cloud-check"></i> Synchronisé';
+                statusEl.className = "bg-success text-white";
+            } else {
+                // Si la DB Cloud est vide, on l'initialise avec les valeurs par défaut
+                set(configRef, defaultConfig);
+            }
+        }, (error) => {
+            console.error("Erreur Sync:", error);
+            document.getElementById('syncStatus').innerHTML = '<i class="bi bi-cloud-slash"></i> Mode Hors-ligne';
+            document.getElementById('syncStatus').className = "bg-warning text-dark";
+        });
+
+        // Mise à jour du menu déroulant
+        function updateRoleSelect() {
+            const select = document.getElementById('userRole');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Sélectionnez votre rôle</option>';
+            Object.keys(currentConfig).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = currentConfig[key].label;
+                select.appendChild(opt);
+            });
+            select.value = currentValue;
+        }
+
+        // Export des fonctions globales pour le HTML
+        window.saveSettings = function() {
+            Object.keys(currentConfig).forEach(key => {
+                currentConfig[key].label = document.getElementById(`label_${key}`).value;
+                currentConfig[key].pass = document.getElementById(`pass_${key}`).value;
+            });
+            
+            // Sauvegarde Cloud (déclenchera l'onValue sur tous les appareils)
+            set(configRef, currentConfig).then(() => {
+                alert("Paramètres synchronisés sur le Cloud !");
+                bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+            }).catch(err => {
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(currentConfig));
+                alert("Sauvegarde locale uniquement (Hors-ligne).");
+            });
+        };
+
+        window.currentConfig = currentConfig;
+        updateRoleSelect();
+    </script>
+
+    <script>
+        // Logique PWA & UI inchangée
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `const CACHE_NAME='wicompta-v1'; self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME)));`;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob));
+            });
+        }
+
+        const AUTH_KEY = 'wicompta_auth_session';
+
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const inputId = this.getAttribute('data-target');
+                const input = document.getElementById(inputId);
+                const icon = this.querySelector('i');
+                input.type = input.type === "password" ? "text" : "password";
+                icon.classList.toggle('bi-eye');
+                icon.classList.toggle('bi-eye-slash');
+            });
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const roleKey = document.getElementById('userRole').value;
+            const pass = document.getElementById('password').value;
+            const error = document.getElementById('errorMsg');
+            
+            if (roleKey && window.currentConfig[roleKey] && pass === window.currentConfig[roleKey].pass) {
+                localStorage.setItem(AUTH_KEY, JSON.stringify({role: roleKey, isLoggedIn: true}));
+                window.location.href = window.currentConfig[roleKey].redirect;
+            } else {
+                error.classList.remove('d-none');
+            }
+        });
+
+        function checkAdminBeforeSettings() {
+            const adminPass = prompt("Mot de passe Administrateur :");
+            if (adminPass === window.currentConfig.comptable.pass) {
+                renderSettings();
+                new bootstrap.Modal(document.getElementById('settingsModal')).show();
+            } else if (adminPass !== null) alert("Accès refusé.");
+        }
+
+        function renderSettings() {
+            const container = document.getElementById('rolesList');
+            container.innerHTML = '';
+            Object.keys(window.currentConfig).forEach(key => {
+                const role = window.currentConfig[key];
+                container.innerHTML += `
+                    <div class="role-edit-box">
+                        <label class="fw-bold mb-1">${key.toUpperCase()}</label>
+                        <input type="text" id="label_${key}" class="form-control mb-2" value="${role.label}">
+                        <div class="input-group">
+                            <input type="password" id="pass_${key}" class="form-control form-control-password" value="${role.pass}">
+                            <span class="input-group-text" onclick="toggleLocalPass('pass_${key}', this)"><i class="bi bi-eye"></i></span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function toggleLocalPass(id, el) {
+            const input = document.getElementById(id);
+            const icon = el.querySelector('i');
+            input.type = input.type === "password" ? "text" : "password";
+            icon.classList.toggle('bi-eye');
+            icon.classList.toggle('bi-eye-slash');
+        }
+
+        localStorage.removeItem(AUTH_KEY);
+    </script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Dashboard</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --exo-color: #d97706; /* Orange Ambre au lieu du jaune */
+            --male-color: #2563eb; /* Bleu */
+            --female-color: #dc2626; /* Rouge */
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient) no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding-top: 0; 
+            padding-bottom: 80px;
+            font-weight: 600; 
+        }
+
+        .navbar {
+            background: var(--nav-gradient);
+            border-bottom: 3px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem 1rem;
+            position: relative; 
+            z-index: 1030;
+        }
+
+        .fixed-stats-header {
+            position: sticky; 
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1020;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--accent-color);
+            padding: 12px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        #headerLogo {
+            height: 35px;
+            width: 35px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: white;
+            padding: 2px;
+        }
+
+        .etablissement-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            text-align: center;
+            font-weight: 800;
+            background: linear-gradient(to right, #1e3a8a, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .page-title-main {
+            font-weight: 700;
+            color: #1e3a8a;
+            margin: 20px 0;
+            padding-left: 20px;
+            border-left: 6px solid var(--accent-color);
+            background: rgba(255,255,255,0.5);
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .stats-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .col-male { color: var(--male-color) !important; font-weight: 700; }
+        .col-female { color: var(--female-color) !important; font-weight: 700; }
+        .text-exo { color: var(--exo-color) !important; }
+
+        footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 30px 0;
+            text-align: center;
+        }
+
+        #headerEtabName {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            color: #ffffff;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--accent-color);
+            padding: 3px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+
+        .stat-item { padding: 2px 5px; }
+        .stat-label-fix { font-size: 0.65rem; white-space: nowrap; font-weight: 700; }
+        .stat-val-fix { font-size: 0.9rem; font-weight: 700; }
+
+        /* Style pour l'indicateur de synchronisation Firebase */
+        #firebase-sync-badge {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            border-radius: 50px;
+            z-index: 9999;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .sync-online { background: #dcfce7; color: #166534; border: 1px solid #166534; }
+        .sync-offline { background: #fee2e2; color: #991b1b; border: 1px solid #991b1b; }
+
+        @media (max-width: 768px) {
+            .etablissement-header { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="" id="headerLogo" alt="Logo" class="me-2 d-none">
+                <span id="headerSalonName" class="fw-bold text-white">WiCompta</span>
+                <span id="headerEtabName" class="d-none"></span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link active px-3" href="index.html"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="maj_eleve.html"><i class="bi bi-person-up me-2"></i>Mise à jour élève</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="finances.html"><i class="bi bi-wallet2 me-2"></i>Finance</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="documents.html"><i class="bi bi-file-earmark-pdf me-2"></i>Documents</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="config.html"><i class="bi bi-sliders me-2"></i>Paramètres</a></li>
+                    <li class="nav-item ms-lg-3">
+                        <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1">
+                            <span class="text-white small me-3">
+                                <i class="bi bi-person-circle me-1"></i>
+                                <span id="displayRole" class="text-uppercase fw-bold"></span>
+                            </span>
+                            <button onclick="logout()" class="btn btn-sm btn-danger rounded-pill py-0 px-2" style="font-size: 0.7rem;">
+                                Déconnexion
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="fixed-stats-header">
+        <div class="container-fluid px-2">
+            <div class="row text-center g-1">
+                <div class="col-4 col-md-2 border-end stat-item">
+                    <div class="stat-label-fix text-muted">TOTAL DÛ (BRUT)</div>
+                    <div class="stat-val-fix text-dark" id="g_total_du">0 F</div>
+                </div>
+                <div class="col-4 col-md-2 border-end stat-item">
+                    <div class="stat-label-fix text-muted">RECOUVRÉ</div>
+                    <div class="stat-val-fix text-success" id="g_paye">0 F</div>
+                </div>
+                <div class="col-4 col-md-2 border-end stat-item">
+                    <div class="stat-label-fix text-muted">RESTE À RECOUV.</div>
+                    <div class="stat-val-fix text-danger" id="g_reste">0 F</div>
+                </div>
+                <div class="col-4 col-md-2 border-end stat-item">
+                    <div class="stat-label-fix text-muted">EXONÉRATIONS</div>
+                    <div class="stat-val-fix text-exo" id="g_exo">0 F</div>
+                </div>
+                <div class="col-4 col-md-2 border-end stat-item">
+                    <div class="stat-label-fix text-muted">TAUX RECOUV.</div>
+                    <div class="stat-val-fix text-primary" id="g_taux">0%</div>
+                </div>
+                <div class="col-4 col-md-2 stat-item">
+                    <div class="stat-label-fix text-muted">EFFECTIF TOTAL</div>
+                    <div class="stat-val-fix" id="g_total">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 id="displayEtablissement" class="etablissement-header">VOTRE ÉTABLISSEMENT</h1>
+        
+        <h2 class="page-title-main">Statistiques Détaillées</h2>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label fw-bold small">Cycle Scolaire</label>
+                <select id="filter_cycle" class="form-select form-select-sm fw-bold" onchange="peuplerClasses()">
+                    <option value="">Sélectionner un cycle</option>
+                    <option value="ALL">TOUS LES CYCLES (ÉTABLISSEMENT)</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold small">Classe / Niveau</label>
+                <select id="filter_classe" class="form-select form-select-sm fw-bold" onchange="calculerStatsClasse()">
+                    <option value="">Sélectionner une classe</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="statsSection" class="d-none">
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="stats-table p-3">
+                        <h6 class="fw-bold mb-3">Répartition Genre & Recouvrement</h6>
+                        <table class="table table-sm align-middle mb-0 fw-bold" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Catégorie</th>
+                                    <th class="text-center col-male">M</th>
+                                    <th class="text-center col-female">F</th>
+                                    <th class="text-center">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table_genre_paye">
+                                <tr><td>Effectif</td><td id="m_total" class="col-male">0</td><td id="f_total" class="col-female">0</td><td id="t_total">0</td></tr>
+                                <tr><td>Ayant soldé</td><td id="m_solde" class="col-male">0</td><td id="f_solde" class="col-female">0</td><td id="t_solde">0</td></tr>
+                                <tr><td>Reste à recouvrir</td><td id="m_reste_n" class="col-male">0</td><td id="f_reste_n" class="col-female">0</td><td id="t_reste_n">0</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-2 text-end text-primary small">Taux de sélection : <span id="classe_taux">0%</span></div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="stats-table p-3">
+                        <h6 class="fw-bold mb-3">Exonérations par Statut (FCFA)</h6>
+                        <table class="table table-sm align-middle mb-0 fw-bold" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Statut</th>
+                                    <th class="text-center col-male">M</th>
+                                    <th class="text-center col-female">F</th>
+                                    <th class="text-center">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table_exonerations">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="firebase-sync-badge" class="sync-offline">
+        <i class="bi bi-cloud-slash"></i> Offline
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="fw-bold text-dark small">© 2026 WiCompta Platform</div>
+            <div class="fw-bold text-primary small">Conçu par Atizoun Plateny AMOUSSOU</div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        // Init
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const badge = document.getElementById('firebase-sync-badge');
+
+        // Liste des clés localStorage à synchroniser
+        const keysToSync = [
+            'wicompta_settings_data', 
+            'wicompta_students_per_class', 
+            'wicompta_master_annual_data', 
+            'wicompta_config_creds',
+            'winTailor_identity'
+        ];
+
+        // 1. GESTION DE L'ETAT DE CONNEXION
+        const connectedRef = ref(db, ".info/connected");
+        onValue(connectedRef, (snap) => {
+            if (snap.val() === true) {
+                badge.className = "sync-online";
+                badge.innerHTML = '<i class="bi bi-cloud-check-fill"></i> Temps Réel (Cloud)';
+            } else {
+                badge.className = "sync-offline";
+                badge.innerHTML = '<i class="bi bi-cloud-slash"></i> Mode Hors-ligne';
+            }
+        });
+
+        // 2. LECTURE AUTOMATIQUE DEPUIS LE CLOUD (Initialisation)
+        const storageRef = ref(db, 'app_data');
+        onValue(storageRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    // On ne met à jour localement que si différent (évite boucles infinies)
+                    const localVal = localStorage.getItem(key);
+                    const remoteVal = JSON.stringify(data[key]);
+                    if (localVal !== remoteVal) {
+                        localStorage.setItem(key, remoteVal);
+                    }
+                });
+                // Déclencher un rafraîchissement des calculs sans recharger la page
+                if(typeof window.initialiserFiltres === 'function') window.initialiserFiltres();
+                if(typeof window.calculerPlaquetteGlobale === 'function') window.calculerPlaquetteGlobale();
+            }
+        });
+
+        // 3. SAUVEGARDE AUTOMATIQUE (CLOUD SYNC)
+        window.pushToCloud = function() {
+            const payload = {};
+            // On récupère tout ce qui est important
+            keysToSync.forEach(key => {
+                const val = localStorage.getItem(key);
+                if(val) payload[key] = JSON.parse(val);
+            });
+
+            // Gérer les clés de finance dynamiques (pour chaque année)
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k.startsWith('wicompta_finance_records')) {
+                    payload[k] = JSON.parse(localStorage.getItem(k));
+                }
+            }
+
+            update(ref(db, 'app_data'), payload).catch(e => console.error("Sync Error:", e));
+        };
+
+        // Détecter tout changement dans le localStorage pour pousser vers le cloud
+        window.addEventListener('storage', () => window.pushToCloud());
+        
+        // Surveillance périodique (toutes les 5 sec) pour assurer la synchro en cas de modifications JS pures
+        setInterval(() => window.pushToCloud(), 5000);
+
+    </script>
+
+    <script>
+        // --- LOGIQUE ORIGINALE PRÉSERVÉE ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Correction du chemin pour éviter l'erreur Blob
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW enregistré'))
+                    .catch(err => console.log('Erreur SW:', err));
+            });
+        }
+
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        let activeAnnee = "2025-2026";
+
+        window.onload = function() {
+            checkAuth();
+            loadIdentity();
+            initialiserFiltres();
+            calculerPlaquetteGlobale();
+        };
+
+        function checkAuth() {
+            const session = JSON.parse(localStorage.getItem(AUTH_KEY));
+            const config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
+                comptable: { label: "Comptable (Admin)" },
+                agent: { label: "Agent de recouvrement" },
+                utilisateur: { label: "Utilisateur" }
+            };
+
+            if (!session || !session.isLoggedIn) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const roleLabel = config[session.role] ? config[session.role].label : session.role;
+            document.getElementById('displayRole').textContent = roleLabel;
+
+            if (session.role === 'utilisateur' && window.location.pathname.includes('index.html')) {
+                window.location.href = 'maj_eleve.html';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(AUTH_KEY);
+            window.location.href = 'login.html';
+        }
+
+        function loadIdentity() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const identityData = localStorage.getItem('winTailor_identity');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const name = data.identification.nomEtab || "VOTRE ÉTABLISSEMENT";
+                activeAnnee = data.options.activeYear || "2025-2026";
+                document.getElementById('displayEtablissement').textContent = (name + " " + activeAnnee).toUpperCase();
+                
+                if (data.isLocked) {
+                    const headerEtab = document.getElementById('headerEtabName');
+                    headerEtab.textContent = (name + " " + activeAnnee).toUpperCase();
+                    headerEtab.classList.remove('d-none');
+                    document.getElementById('displayEtablissement').classList.add('d-none');
+                }
+            }
+            if (identityData) {
+                try {
+                    const data = JSON.parse(identityData);
+                    const logoImg = document.getElementById('headerLogo');
+                    if (data.logoUrl) { logoImg.src = data.logoUrl; logoImg.classList.remove('d-none'); }
+                } catch (e) { console.error(e); }
+            }
+        }
+
+        function getYearlyFinanceKey() {
+            return `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+        }
+
+        function initialiserFiltres() {
+            const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            if (savedData && savedData.options.cycles) {
+                const cycleSelect = document.getElementById('filter_cycle');
+                // Nettoyage avant repeuplement
+                while (cycleSelect.options.length > 2) cycleSelect.remove(2);
+                
+                savedData.options.cycles.forEach(c => {
+                    if(c && c !== "Choisir...") cycleSelect.add(new Option(c, c));
+                });
+            }
+        }
+
+        function peuplerClasses() {
+            const selectedCycle = document.getElementById('filter_cycle').value;
+            const classeSelect = document.getElementById('filter_classe');
+            classeSelect.innerHTML = '<option value="">Sélectionner une classe</option>';
+            
+            if(selectedCycle === "ALL") {
+                classeSelect.add(new Option("TOUT L'ÉTABLISSEMENT (GLOBAL)", "GLOBAL_ALL"));
+            } else if (selectedCycle !== "") {
+                const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                Object.keys(allStudents).forEach(id => {
+                    if (id.startsWith(selectedCycle) && id.includes(activeAnnee)) {
+                        classeSelect.add(new Option(id.split('_')[1], id));
+                    }
+                });
+            }
+            document.getElementById('statsSection').classList.add('d-none');
+        }
+
+        function getStudentFinance(s, classId) {
+            const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+            const yearData = master[activeAnnee];
+            if (!yearData) return { base: 0, expected: 0, exo: 0 };
+            
+            const cycle = classId.split('_')[0];
+            const classeLabel = classId.split('_')[1];
+            
+            let totalBase = 0, totalReduction = 0;
+            const parser = new DOMParser();
+            
+            const chargesDoc = parser.parseFromString(yearData.chargesHTML || "", "text/html");
+            const chargesApplicables = [];
+            
+            chargesDoc.querySelectorAll('.list-group-item').forEach(cItem => {
+                const nomElement = cItem.querySelector('strong');
+                if(!nomElement) return;
+                const nom = nomElement.innerText.trim();
+                const montantVal = cItem.querySelector('.charge-montant-val');
+                const montant = montantVal ? parseInt(montantVal.textContent.replace(/\D/g, '')) : 0;
+                const cibleText = cItem.querySelector('.text-muted').innerText;
+
+                if (cibleText.includes(`Tout le cycle ${cycle}`) || (cibleText.includes("Classes:") && cibleText.includes(classeLabel))) {
+                    totalBase += montant;
+                    chargesApplicables.push({ nom, montant });
+                }
+            });
+
+            const exonsDoc = parser.parseFromString(yearData.exonsHTML || "", "text/html");
+            exonsDoc.querySelectorAll('.list-group-item').forEach(item => {
+                const ruleHeader = item.querySelector('strong').innerText;
+                const metaText = item.querySelector('small').innerText;
+                const ruleParts = ruleHeader.split('|');
+                
+                if (ruleParts[0].trim() !== cycle) return;
+
+                const isSexeMatch = metaText.includes(`Genre: ${s.sexe}`) || metaText.includes(`/${s.sexe}`) || metaText.includes(`${s.sexe}/`);
+                const isStatutMatch = metaText.includes(`Statut: ${s.statut}`);
+
+                if (isSexeMatch && isStatutMatch) {
+                    const targetCharge = chargesApplicables.find(c => c.nom === ruleParts[1].trim());
+                    if (targetCharge) totalReduction += targetCharge.montant;
+                }
+            });
+
+            return { base: totalBase, expected: Math.max(0, totalBase - totalReduction), exo: totalReduction };
+        }
+
+        function calculerPlaquetteGlobale() {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const financeData = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}");
+            let g = { total: 0, paye: 0, duNet: 0, duBrut: 0, exo: 0 };
+
+            Object.keys(allStudents).forEach(classId => {
+                if (classId.includes(activeAnnee)) {
+                    allStudents[classId].forEach((s, idx) => {
+                        const fin = getStudentFinance(s, classId);
+                        const uniqueId = `${classId}_${s.nom}_${idx}`;
+                        const paid = financeData[uniqueId]?.paid || 0;
+                        g.total++;
+                        g.paye += paid;
+                        g.duBrut += fin.base;
+                        g.duNet += fin.expected;
+                        g.exo += fin.exo;
+                    });
+                }
+            });
+
+            document.getElementById('g_total_du').textContent = g.duBrut.toLocaleString() + " F";
+            document.getElementById('g_paye').textContent = g.paye.toLocaleString() + " F";
+            document.getElementById('g_reste').textContent = Math.max(0, g.duNet - g.paye).toLocaleString() + " F";
+            document.getElementById('g_exo').textContent = g.exo.toLocaleString() + " F";
+            document.getElementById('g_total').textContent = g.total;
+            document.getElementById('g_taux').textContent = g.duNet > 0 ? Math.round((g.paye/g.duNet)*100) + "%" : "0%";
+        }
+
+        function calculerStatsClasse() {
+            const classId = document.getElementById('filter_classe').value;
+            if (!classId) return;
+            document.getElementById('statsSection').classList.remove('d-none');
+
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const financeData = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}");
+            
+            let studentsToProcess = [];
+            if(classId === "GLOBAL_ALL") {
+                Object.keys(allStudents).forEach(cid => {
+                    if(cid.includes(activeAnnee)) {
+                        allStudents[cid].forEach((s, idx) => {
+                            studentsToProcess.push({ s, cid, idx });
+                        });
+                    }
+                });
+            } else {
+                (allStudents[classId] || []).forEach((s, idx) => {
+                    studentsToProcess.push({ s, cid: classId, idx });
+                });
+            }
+
+            let st = { m: {t:0, s:0, r:0}, f: {t:0, s:0, r:0}, t: {t:0, s:0, r:0}, duNet: 0, paye: 0 };
+            let exos = {}; 
+
+            studentsToProcess.forEach(item => {
+                const fin = getStudentFinance(item.s, item.cid);
+                const uniqueId = `${item.cid}_${item.s.nom}_${item.idx}`;
+                const paid = financeData[uniqueId]?.paid || 0;
+                const isSolded = paid >= fin.expected && fin.expected > 0;
+                const key = item.s.sexe === 'M' ? 'm' : 'f';
+
+                st[key].t++;
+                st.t.t++;
+                st.duNet += fin.expected;
+                st.paye += paid;
+
+                if(isSolded) { st[key].s++; st.t.s++; }
+                else { st[key].r++; st.t.r++; }
+
+                if(!exos[item.s.statut]) exos[item.s.statut] = { m:0, f:0 };
+                exos[item.s.statut][key] += fin.exo;
+            });
+
+            ['m','f','t'].forEach(k => {
+                document.getElementById(`${k}_total`).textContent = st[k].t;
+                document.getElementById(`${k}_solde`).textContent = st[k].s;
+                document.getElementById(`${k}_reste_n`).textContent = st[k].r;
+            });
+            document.getElementById('classe_taux').textContent = st.duNet > 0 ? Math.round((st.paye/st.duNet)*100) + "%" : "0%";
+
+            const exoBody = document.getElementById('table_exonerations');
+            exoBody.innerHTML = "";
+            Object.keys(exos).forEach(statut => {
+                const row = `<tr><td>${statut}</td><td class="text-center col-male">${exos[statut].m.toLocaleString()}</td><td class="text-center col-female">${exos[statut].f.toLocaleString()}</td><td class="text-center fw-bold">${(exos[statut].m + exos[statut].f).toLocaleString()}</td></tr>`;
+                exoBody.innerHTML += row;
+            });
+        }
+    </script>
+</body>
+</html>

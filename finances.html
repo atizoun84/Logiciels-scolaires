@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiCompta - Finances</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --nav-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --accent-color: #10b981;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient) no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: var(--nav-gradient);
+            border-bottom: 3px solid var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem 1rem;
+        }
+
+        #headerLogo {
+            height: 40px;
+            width: 40px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: white;
+            padding: 2px;
+        }
+
+        #headerEtabName {
+            font-size: 0.9rem;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 5px 15px;
+            border-radius: 50px;
+            margin-left: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-weight: 600;
+        }
+
+        .user-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .btn-logout {
+            color: #ff4d4d !important;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover {
+            background: rgba(255, 77, 77, 0.1);
+            border-radius: 8px;
+        }
+
+        .page-title-main {
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 30px 0;
+            padding-left: 20px;
+            border-left: 6px solid var(--accent-color);
+            background: rgba(255,255,255,0.5);
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: white; padding: 15px; border-radius: 15px; border-left: 4px solid #3b82f6; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
+        .stat-val { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+
+        .search-container { position: relative; }
+        .search-results { 
+            position: absolute; top: 100%; left: 0; right: 0; 
+            background: white; z-index: 1000; border-radius: 0 0 15px 15px; 
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;
+        }
+        .search-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-item:hover { background-color: #f0f4ff; }
+
+        .modal-refined { border-radius: 25px; overflow: hidden; border: none; }
+        .modal-refined .modal-header { background: #1e3a8a; color: white; }
+        
+        .history-table { font-size: 0.85rem; }
+
+        .charge-row { border-bottom: 1px solid #eee; padding: 10px 0; align-items: center; }
+        .charge-input { max-width: 120px; }
+        
+        #syncStatus {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 576px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media print {
+            body { background: white !important; padding: 0 !important; }
+            .no-print, .btn, .navbar, .search-container, .modal-footer, #syncStatus { display: none !important; }
+            .settings-card { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            #printArea { display: block !important; padding: 20px; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt !important; }
+            th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .signature-block { margin-top: 50px; display: flex; justify-content: space-between; }
+        }
+
+        #printArea { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="syncStatus" class="no-print">
+        <i class="bi bi-cloud-check text-success" id="syncIcon"></i> <span id="syncText">Initialisation...</span>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top no-print">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="" id="headerLogo" alt="Logo" class="me-2 d-none">
+                <span class="fw-bold text-white">WiCompta</span>
+                <span id="headerEtabName">ÉTABLISSEMENT</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list fs-2 text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link px-3" href="index.html"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="maj_eleve.html"><i class="bi bi-person-up me-2"></i>Mise à jour élève</a></li>
+                    <li class="nav-item"><a class="nav-link active px-3" href="finances.html"><i class="bi bi-wallet2 me-2"></i>Finance</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="documents.html"><i class="bi bi-file-earmark-arrow-down me-2"></i>Documents</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="config.html"><i class="bi bi-sliders me-2"></i>Paramètres</a></li>
+                    <li class="nav-item ms-lg-3 py-2 py-lg-0">
+                        <span id="displayRole" class="user-badge me-2">Rôle</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-logout px-3" href="javascript:void(0)" onclick="logout()">
+                            <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="page-title-main no-print">Gestion Financière & Recouvrement</h2>
+
+        <div class="row g-3 mb-4 no-print">
+            <div class="col-md-12 search-container">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 rounded-pill-start"><i class="bi bi-search"></i></span>
+                    <input type="text" id="mainSearch" class="form-control border-start-0 rounded-pill-end" placeholder="Rechercher un élève..." oninput="rechercheFinanciere(this.value)">
+                </div>
+                <div id="searchResults" class="search-results d-none"></div>
+            </div>
+            <div class="col-md-6"><select id="filter_cycle" class="form-select" onchange="peuplerClasses()"><option value="">Sélectionner un cycle</option></select></div>
+            <div class="col-md-6"><select id="filter_classe" class="form-select" onchange="afficherListeFinanciere()"><option value="">Sélectionner une classe</option></select></div>
+        </div>
+
+        <div id="statsArea" class="stats-grid d-none no-print">
+            <div class="stat-box" style="border-left-color: #1e3a8a;"><div class="stat-label">Attendu</div><div class="stat-val" id="stat_total_du">0</div></div>
+            <div class="stat-box" style="border-left-color: #10b981;"><div class="stat-label">Recouvré</div><div class="stat-val" id="stat_total_paye">0</div></div>
+            <div class="stat-box" style="border-left-color: #f59e0b;"><div class="stat-label">Exonérations</div><div class="stat-val" id="stat_total_exon">0</div></div>
+            <div class="stat-box" style="border-left-color: #ef4444;"><div class="stat-label">Taux Recouvrement</div><div class="stat-val" id="stat_taux">0%</div></div>
+        </div>
+
+        <section class="settings-card no-print">
+            <div id="financeListArea" class="d-none">
+                <div class="row g-2 mb-4">
+                    <div class="col-12 col-md-6">
+                        <h4 class="fw-bold text-primary m-0" id="tableTitle">LISTE FINANCIÈRE</h4>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="bi bi-funnel"></i></span>
+                            <input type="text" id="classLocalSearch" class="form-control" placeholder="Recherche rapide dans cette classe..." oninput="filtrerTableParNom(this.value)">
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+                        <button class="btn btn-sm btn-outline-primary flex-fill" onclick="filtrerListe('tous')">Tous</button>
+                        <button class="btn btn-sm btn-outline-success flex-fill" onclick="filtrerListe('solde')">Soldé</button>
+                        <button class="btn btn-sm btn-outline-danger flex-fill" onclick="filtrerListe('dette')">Restant</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="mainFinanceTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ÉLÈVE</th>
+                                <th>SEXE</th>
+                                <th>STATUT</th>
+                                <th>DÉTAILS EXO</th>
+                                <th>ATTENDU</th>
+                                <th>PAYÉ</th>
+                                <th>RESTE</th>
+                                <th class="text-end">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="financeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="emptyState" class="text-center text-muted mt-5">
+                <i class="bi bi-cash-stack" style="font-size: 4rem; opacity: 0.3;"></i>
+                <p class="mt-3">Sélectionnez une classe pour afficher les données.</p>
+            </div>
+        </section>
+    </div>
+
+    <div id="printArea"></div>
+
+    <div class="modal fade" id="modalPaiement" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content modal-refined">
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold" id="p_nom">NOM DE L'ELEVE</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2 mb-3 p-2 bg-light rounded shadow-sm small">
+                        <div class="col-md-3"><strong>Classe:</strong> <span id="p_classe"></span></div>
+                        <div class="col-md-3"><strong>Sexe:</strong> <span id="p_sexe"></span></div>
+                        <div class="col-md-3"><strong>Statut:</strong> <span id="p_statut"></span></div>
+                        <div class="col-md-12 mt-2 text-primary"><strong>Exonérations:</strong> <span id="p_exo_detail"></span></div>
+                    </div>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-4 text-center border-end"><h6>TOTAL DÛ</h6><div class="fw-bold" id="p_total_du">0</div></div>
+                        <div class="col-4 text-center border-end"><h6>TOTAL VERSÉ</h6><div class="fw-bold text-success" id="p_total_paye">0</div></div>
+                        <div class="col-4 text-center"><h6>RESTE GLOBAL</h6><div class="fw-bold text-danger" id="p_reste">0</div></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-7">
+                            <h6 class="border-bottom pb-2 mb-3">Saisie des paiements par charge</h6>
+                            <div id="chargesPaiementContainer" style="max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
+                            
+                            <div id="reliquatSection" class="mt-4 p-3 bg-warning bg-opacity-10 border border-warning rounded d-none">
+                                <h6 class="text-dark fw-bold"><i class="bi bi-arrow-left-right"></i> Remboursement de reliquat</h6>
+                                <p class="small text-muted mb-2">Un surplus de paiement a été détecté. Vous pouvez rembourser tout ou partie de la somme.</p>
+                                <div class="d-flex gap-2">
+                                    <input type="number" id="input_reliquat" class="form-control form-control-sm" placeholder="Montant à rembourser">
+                                    <button class="btn btn-sm btn-warning" onclick="validerRemboursement()">Rembourser</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
+                                <h6>Historique</h6>
+                                <button class="btn btn-sm btn-outline-dark" onclick="imprimerRecu()"><i class="bi bi-printer"></i> Reçu</button>
+                            </div>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-sm small"><tbody id="p_historique"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container text-center">
+            <div class="fw-bold">© 2026 WiCompta Platform</div>
+            <div class="small text-muted" id="footerContact">Conçu par Atizoun Plateny AMOUSSOU | 01 97 74 40 35</div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, get } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
+            authDomain: "gestion-recouvrement-college.firebaseapp.com",
+            projectId: "gestion-recouvrement-college",
+            storageBucket: "gestion-recouvrement-college.firebasestorage.app",
+            messagingSenderId: "446617885081",
+            appId: "1:446617885081:web:23565a1a16eea28754db08",
+            databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Export pour usage global dans le script classique
+        window.firebaseDB = db;
+        window.dbRefs = { ref, onValue, set, update, get };
+
+        // Surveillance de l'état de connexion
+        const connectedRef = ref(db, ".info/connected");
+        onValue(connectedRef, (snap) => {
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncText');
+            if (snap.val() === true) {
+                icon.className = "bi bi-cloud-check text-success";
+                text.innerText = "Connecté au Cloud";
+                syncFromCloud(); // Lancer la lecture automatique au démarrage
+            } else {
+                icon.className = "bi bi-cloud-slash text-danger";
+                text.innerText = "Mode Hors-ligne";
+            }
+        });
+    </script>
+
+    <script>
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        
+        let currentStudent = null;
+        let bsModalPaiement = null;
+        let activeAnnee = "2025-2026"; 
+
+        window.onload = function() {
+            checkAuth();
+            bsModalPaiement = new bootstrap.Modal(document.getElementById('modalPaiement'));
+            loadIdentity();
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            if(saved) {
+                const cycleSelect = document.getElementById('filter_cycle');
+                saved.options.cycles.forEach(c => {
+                   if(c && c !== "Choisir...") cycleSelect.add(new Option(c, c));
+                });
+            }
+        };
+
+        // --- SYNCHRONISATION FIREBASE ---
+        async function syncFromCloud() {
+            if (!window.firebaseDB) return;
+            const yearKey = getYearlyFinanceKey();
+            const dbRef = window.dbRefs.ref(window.firebaseDB, 'finances/' + yearKey);
+            
+            window.dbRefs.onValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem(yearKey, JSON.stringify(data));
+                    if (document.getElementById('financeListArea').classList.contains('d-none') === false) {
+                        afficherListeFinanciere(); // Update UI si une classe est ouverte
+                    }
+                }
+            });
+        }
+
+        async function saveToCloud(uniqueId, record) {
+            if (!window.firebaseDB) return;
+            const yearKey = getYearlyFinanceKey();
+            const dbRef = window.dbRefs.ref(window.firebaseDB, `finances/${yearKey}/${uniqueId}`);
+            try {
+                await window.dbRefs.set(dbRef, record);
+            } catch (e) {
+                console.error("Erreur Cloud:", e);
+            }
+        }
+
+        function checkAuth() {
+            const session = JSON.parse(localStorage.getItem(AUTH_KEY));
+            const config = JSON.parse(localStorage.getItem(CONFIG_KEY));
+            if (!session || !session.isLoggedIn) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const roleKey = session.role;
+            const roleLabel = (config && config[roleKey]) ? config[roleKey].label : roleKey;
+            document.getElementById('displayRole').textContent = roleLabel;
+        }
+
+        function logout() {
+            localStorage.removeItem(AUTH_KEY);
+            window.location.href = 'login.html';
+        }
+
+        function loadIdentity() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const name = data.identification.nomEtab || "ÉTABLISSEMENT";
+                activeAnnee = data.options.activeYear || "2025-2026";
+                document.getElementById('headerEtabName').textContent = `${name} | ${activeAnnee}`.toUpperCase();
+            }
+        }
+
+        function getYearlyFinanceKey() {
+            return `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+        }
+
+        function peuplerClasses() {
+            const selectedCycle = document.getElementById('filter_cycle').value;
+            const classeSelect = document.getElementById('filter_classe');
+            classeSelect.innerHTML = '<option value="">Sélectionner une classe</option>';
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            
+            Object.keys(allStudents).forEach(id => {
+                if (id.startsWith(selectedCycle) && id.includes(activeAnnee)) {
+                    const parts = id.split('_');
+                    const label = parts[1];
+                    classeSelect.add(new Option(label, id));
+                }
+            });
+            
+            document.getElementById('financeListArea').classList.add('d-none');
+            document.getElementById('statsArea').classList.add('d-none');
+            document.getElementById('emptyState').classList.remove('d-none');
+        }
+
+        function getStudentFinance(s, classId) {
+            const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+            const yearData = master[activeAnnee];
+            if (!yearData) return { expected: 0, exo: 0, nature: "Erreur config", charges: [] };
+
+            const cycle = classId.split('_')[0];
+            const classeLabel = classId.split('_')[1];
+            
+            let totalReduction = 0;
+            let detailsExo = [];
+            let chargesDetaillees = [];
+
+            const parser = new DOMParser();
+            const chargesDoc = parser.parseFromString(yearData.chargesHTML || "", "text/html");
+            chargesDoc.querySelectorAll('.list-group-item').forEach(cItem => {
+                const nomElement = cItem.querySelector('strong');
+                if(!nomElement) return;
+                const nom = nomElement.innerText.trim();
+                const montant = parseInt(cItem.querySelector('.charge-montant-val').textContent.replace(/\D/g, '')) || 0;
+                const cibleText = cItem.querySelector('.text-muted').innerText;
+                let estCible = false;
+                if (cibleText.includes(`Tout le cycle ${cycle}`)) estCible = true;
+                else if (cibleText.includes("Classes:") && cibleText.includes(classeLabel)) estCible = true;
+                if (estCible) chargesDetaillees.push({ nom, montantInitial: montant, montantAttendu: montant, exo: 0 });
+            });
+
+            const exonsDoc = parser.parseFromString(yearData.exonsHTML || "", "text/html");
+            exonsDoc.querySelectorAll('.list-group-item').forEach(item => {
+                const ruleHeader = item.querySelector('strong').innerText; 
+                const metaText = item.querySelector('small').innerText; 
+                const ruleParts = ruleHeader.split('|');
+                const ruleCycle = ruleParts[0].trim();
+                const ruleCharge = ruleParts[1].trim();
+                if (ruleCycle !== cycle) return;
+                const isSexeMatch = metaText.includes(`Genre: ${s.sexe}`) || metaText.includes(`/${s.sexe}`) || metaText.includes(`${s.sexe}/`);
+                const isStatutMatch = metaText.includes(`Statut: ${s.statut}`);
+                if (isSexeMatch && isStatutMatch) {
+                    let target = chargesDetaillees.find(c => c.nom === ruleCharge);
+                    if (target) {
+                        target.exo = target.montantInitial;
+                        target.montantAttendu = 0;
+                        totalReduction += target.montantInitial;
+                        detailsExo.push(`${target.nom} (-${target.montantInitial.toLocaleString()})`);
+                    }
+                }
+            });
+            const expectedTotal = chargesDetaillees.reduce((sum, c) => sum + c.montantAttendu, 0);
+            return { expected: expectedTotal, exo: totalReduction, nature: detailsExo.length > 0 ? detailsExo.join(', ') : "Aucune", charges: chargesDetaillees };
+        }
+
+        function afficherListeFinanciere() {
+            const classId = document.getElementById('filter_classe').value;
+            if (!classId) return;
+
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const students = allStudents[classId] || [];
+            const financeData = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}");
+            
+            let stats = { du: 0, paye: 0, exo: 0 };
+            const tbody = document.getElementById('financeTableBody');
+            tbody.innerHTML = "";
+
+            students.forEach((s, idx) => {
+                const fin = getStudentFinance(s, classId);
+                const uniqueId = `${classId}_${s.nom}_${idx}`;
+                const paid = financeData[uniqueId]?.paid || 0;
+                const reste = fin.expected - paid;
+                stats.du += fin.expected; stats.paye += paid; stats.exo += fin.exo;
+
+                const tr = document.createElement('tr');
+                tr.style.cursor = "pointer";
+                tr.dataset.reste = reste;
+                tr.dataset.nom = s.nom.toLowerCase();
+                tr.onclick = (e) => { if(!e.target.closest('button')) ouvrirPaiement(classId, idx); };
+                tr.innerHTML = `
+                    <td class="fw-bold">${s.nom}</td><td>${s.sexe}</td><td><small>${s.statut}</small></td>
+                    <td class="text-primary small">${fin.nature}</td><td class="fw-bold">${fin.expected.toLocaleString()}</td>
+                    <td class="text-success fw-bold">${paid.toLocaleString()}</td>
+                    <td class="text-${reste <= 0 ? 'success' : 'danger'} fw-bold">${reste <= 0 ? (reste < 0 ? '+' + Math.abs(reste).toLocaleString() : '0') : reste.toLocaleString()}</td>
+                    <td class="text-end"><button class="btn btn-sm btn-success rounded-pill px-3" onclick="ouvrirPaiement('${classId}', ${idx})">Payer</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('statsArea').classList.remove('d-none');
+            document.getElementById('financeListArea').classList.remove('d-none');
+            document.getElementById('emptyState').classList.add('d-none');
+            document.getElementById('stat_total_du').innerText = stats.du.toLocaleString() + " F";
+            document.getElementById('stat_total_paye').innerText = stats.paye.toLocaleString() + " F";
+            document.getElementById('stat_total_exon').innerText = stats.exo.toLocaleString() + " F";
+            document.getElementById('stat_taux').innerText = stats.du > 0 ? Math.round((stats.paye/stats.du)*100) + "%" : "0%";
+            document.getElementById('tableTitle').innerText = "LISTE FINANCIÈRE : " + classId.split('_')[1].toUpperCase();
+        }
+
+        function filtrerListe(type) {
+            const rows = document.querySelectorAll('#financeTableBody tr');
+            rows.forEach(row => {
+                const reste = parseInt(row.dataset.reste);
+                if (type === 'solde') row.style.display = (reste <= 0) ? '' : 'none';
+                else if (type === 'dette') row.style.display = (reste > 0) ? '' : 'none';
+                else row.style.display = '';
+            });
+        }
+
+        function filtrerTableParNom(val) {
+            const search = val.toLowerCase();
+            const rows = document.querySelectorAll('#financeTableBody tr');
+            rows.forEach(row => { row.style.display = row.dataset.nom.includes(search) ? '' : 'none'; });
+        }
+
+        function ouvrirPaiement(classId, idx) {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
+            const s = allStudents[classId][idx];
+            const fin = getStudentFinance(s, classId);
+            const uniqueId = `${classId}_${s.nom}_${idx}`;
+            const record = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}")[uniqueId] || { paid: 0, history: [], chargesPaid: {} };
+
+            currentStudent = { classId, idx, uniqueId, data: s, expected: fin.expected, charges: fin.charges };
+            document.getElementById('p_nom').innerText = s.nom;
+            document.getElementById('p_classe').innerText = classId.split('_')[1];
+            document.getElementById('p_sexe').innerText = s.sexe;
+            document.getElementById('p_statut').innerText = s.statut;
+            document.getElementById('p_exo_detail').innerText = fin.nature;
+
+            const container = document.getElementById('chargesPaiementContainer');
+            container.innerHTML = "";
+            fin.charges.forEach(c => {
+                const alreadyPaid = record.chargesPaid?.[c.nom] || 0;
+                const resteCharge = c.montantAttendu - alreadyPaid;
+                const row = document.createElement('div');
+                row.className = "charge-row d-flex justify-content-between";
+                row.innerHTML = `
+                    <div style="flex:1"><div class="fw-bold small">${c.nom}</div><div class="text-muted" style="font-size:0.75rem">Dû: ${c.montantAttendu} | Payé: ${alreadyPaid}</div></div>
+                    <div class="d-flex gap-2"><input type="number" class="form-control form-control-sm charge-input" placeholder="Montant" id="input_${c.nom.replace(/\s+/g, '')}" ${resteCharge <= 0 ? 'disabled' : ''}>
+                    <button class="btn btn-sm btn-primary" onclick="validerPaiementCharge('${c.nom}')" ${resteCharge <= 0 ? 'disabled' : ''}><i class="bi bi-check-lg"></i></button></div>
+                `;
+                container.appendChild(row);
+            });
+            updatePaiementUI(record);
+            bsModalPaiement.show();
+        }
+
+        function updatePaiementUI(record) {
+            const resteGlobal = currentStudent.expected - record.paid;
+            document.getElementById('p_total_du').innerText = currentStudent.expected.toLocaleString() + " F";
+            document.getElementById('p_total_paye').innerText = record.paid.toLocaleString() + " F";
+            const resteElem = document.getElementById('p_reste');
+            if (resteGlobal < 0) {
+                resteElem.innerText = "+" + Math.abs(resteGlobal).toLocaleString() + " F (SURPLUS)";
+                resteElem.className = "fw-bold text-primary";
+                document.getElementById('reliquatSection').classList.remove('d-none');
+            } else {
+                resteElem.innerText = resteGlobal.toLocaleString() + " F";
+                resteElem.className = "fw-bold text-danger";
+                document.getElementById('reliquatSection').classList.add('d-none');
+            }
+            const h = document.getElementById('p_historique');
+            h.innerHTML = (record.history || []).map(x => `
+                <tr class="${x.amount < 0 ? 'table-warning' : ''}"><td>${x.date}</td><td class="text-end fw-bold">${x.amount.toLocaleString()} F</td><td class="small text-muted">${x.note || ''}</td></tr>`).reverse().join('');
+        }
+
+        async function validerPaiementCharge(nomCharge) {
+            const inputId = `input_${nomCharge.replace(/\s+/g, '')}`;
+            const input = document.getElementById(inputId);
+            const amt = parseInt(input.value);
+            if (!amt || amt <= 0) return;
+
+            const yearlyKey = getYearlyFinanceKey();
+            let data = JSON.parse(localStorage.getItem(yearlyKey) || "{}");
+            if (!data[currentStudent.uniqueId]) {
+                data[currentStudent.uniqueId] = { paid: 0, history: [], chargesPaid: {} };
+            }
+            let record = data[currentStudent.uniqueId];
+            if(!record.chargesPaid) record.chargesPaid = {};
+
+            record.paid += amt;
+            record.chargesPaid[nomCharge] = (record.chargesPaid[nomCharge] || 0) + amt;
+            record.history.push({ date: new Date().toLocaleDateString(), amount: amt, note: nomCharge });
+
+            localStorage.setItem(yearlyKey, JSON.stringify(data));
+            await saveToCloud(currentStudent.uniqueId, record); // Sauvegarde Cloud
+
+            updatePaiementUI(record);
+            const targetCharge = currentStudent.charges.find(c => c.nom === nomCharge);
+            input.value = "";
+            if(record.chargesPaid[nomCharge] >= targetCharge.montantAttendu) {
+                input.disabled = true; input.nextElementSibling.disabled = true;
+            }
+            input.closest('.charge-row').querySelector('.text-muted').innerText = `Dû: ${targetCharge.montantAttendu} | Payé: ${record.chargesPaid[nomCharge]}`;
+            afficherListeFinanciere();
+        }
+
+        async function validerRemboursement() {
+            const input = document.getElementById('input_reliquat');
+            const amt = parseInt(input.value);
+            if (!amt || amt <= 0) return;
+            const yearlyKey = getYearlyFinanceKey();
+            let data = JSON.parse(localStorage.getItem(yearlyKey) || "{}");
+            let record = data[currentStudent.uniqueId];
+            const surplusMax = record.paid - currentStudent.expected;
+            if (amt > surplusMax && surplusMax > 0) { alert("Le montant dépasse le surplus disponible"); return; }
+            record.paid -= amt;
+            record.history.push({ date: new Date().toLocaleDateString(), amount: -amt, note: "Remboursement Reliquat" });
+            localStorage.setItem(yearlyKey, JSON.stringify(data));
+            await saveToCloud(currentStudent.uniqueId, record); // Sauvegarde Cloud
+            input.value = ""; updatePaiementUI(record); afficherListeFinanciere();
+        }
+
+        function imprimerRecu() {
+            const settings = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const record = JSON.parse(localStorage.getItem(getYearlyFinanceKey()))[currentStudent.uniqueId];
+            if(!record || record.history.length === 0) return;
+            const lastPay = record.history[record.history.length-1];
+            const nomEtab = settings.identification.nomEtab || "ÉTABLISSEMENT";
+            const commune = settings.identification.commune || "";
+            const comptable = settings.identification.comptable || "Le Comptable";
+            let html = `
+                <div style="border: 2px solid #000; padding: 25px; width: 500px; margin: auto; font-family: sans-serif; background: #fff;">
+                    <div style="text-align: center; border-bottom: 2px double #000; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h2 style="margin: 0; text-transform: uppercase;">${nomEtab}</h2>
+                        <h4 style="margin: 5px 0; color: #555;">Année Scolaire : ${activeAnnee}</h4>
+                        <h3 style="margin: 10px 0 0 0; background: #000; color: #fff; display: inline-block; padding: 5px 20px;">${lastPay.amount < 0 ? 'REÇU DE REMBOURSEMENT' : 'REÇU DE PAIEMENT'}</h3>
+                    </div>
+                    <p><strong>Élève :</strong> ${currentStudent.data.nom}</p>
+                    <p><strong>Classe :</strong> ${currentStudent.classId.split('_')[1]}</p>
+                    <p><strong>Motif :</strong> ${lastPay.note || 'Scolarité'}</p>
+                    <div style="border: 1px dashed #000; padding: 10px; margin: 15px 0; text-align: center; font-size: 1.2rem; font-weight: bold;">MONTANT : ${Math.abs(lastPay.amount).toLocaleString()} FCFA</div>
+                    <p><strong>Total net payé (${activeAnnee}) :</strong> ${record.paid.toLocaleString()} FCFA</p>
+                    <p><strong>Solde :</strong> ${(currentStudent.expected - record.paid).toLocaleString()} FCFA</p>
+                    <div style="margin-top: 40px; text-align: right;"><p>Fait à ${commune}, le ${new Date().toLocaleDateString()}</p><strong>${comptable}</strong></div>
+                </div>`;
+            document.getElementById('printArea').innerHTML = html;
+            window.print();
+        }
+
+        function rechercheFinanciere(val) {
+            const container = document.getElementById('searchResults');
+            if (val.length < 2) { container.classList.add('d-none'); return; }
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            let items = [];
+            Object.keys(allStudents).forEach(cid => {
+                if (cid.includes(activeAnnee)) {
+                    allStudents[cid].forEach((s, idx) => {
+                        if (s.nom.toLowerCase().includes(val.toLowerCase())) items.push({ ...s, cid, idx });
+                    });
+                }
+            });
+            container.innerHTML = items.slice(0, 10).map(i => `<div class="search-item" onclick="ouvrirPaiement('${i.cid}', ${i.idx})">${i.nom} (${i.cid.split('_')[1]})</div>`).join('');
+            container.classList.remove('d-none');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) document.getElementById('searchResults').classList.add('d-none');
+        });
+    </script>
+</body>
+</html>
