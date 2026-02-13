@@ -152,7 +152,6 @@
             font-weight: 600;
         }
 
-        /* Indicateur de synchro cloud FLOTTANT */
         .sync-floating-badge {
             position: fixed;
             bottom: 20px;
@@ -195,8 +194,8 @@
                     <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
                         <div class="user-badge border border-white-50">
                             <i class="bi bi-person-circle me-2 text-info"></i>
-                            <span id="connectedRole" class="me-3">Chargement...</span>
-                            <a href="#" onclick="deconnexion()" class="btn-logout text-decoration-none">
+                            <span id="connectedRole">Chargement...</span>
+                            <a href="#" onclick="deconnexion()" class="btn-logout text-decoration-none ms-3">
                                 <i class="bi bi-power"></i>
                             </a>
                         </div>
@@ -388,7 +387,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
@@ -403,7 +402,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- GLOBAL VARIABLES & CONSTANTS ---
+        // --- CONSTANTS ---
         const STORAGE_KEY = 'wicompta_settings_data';
         const STUDENTS_KEY = 'wicompta_students_per_class';
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
@@ -447,12 +446,11 @@
             }
         }
 
-        // Ecoute de l'état de connexion Firebase
         onValue(ref(db, ".info/connected"), (snapshot) => {
             updateCloudIndicator(snapshot.val() === true);
         });
 
-        // Lecture automatique et mise à jour en temps réel depuis le cloud
+        // Lecture initiale et abonnement aux changements distants
         onValue(ref(db, 'cloud_storage/'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -462,14 +460,12 @@
                 if(data.config) localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config));
                 if(data.identity) localStorage.setItem(IDENTITY_KEY, JSON.stringify(data.identity));
                 
-                // Records financiers
                 Object.keys(data).forEach(key => {
                     if (key.startsWith(FINANCE_KEY)) {
                         localStorage.setItem(key, JSON.stringify(data[key]));
                     }
                 });
 
-                // Rafraîchissement discret
                 loadIdentity();
                 initialiserFiltres();
                 if(currentClassId) refreshCurrentList(currentClassId);
@@ -636,43 +632,48 @@
             allStudents[currentClassId].sort((a, b) => a.nom.localeCompare(b.nom));
             localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
             nomInput.value = "";
-            window.syncLocalToCloud(); 
-            refreshCurrentList(currentClassId, nom);
+            refreshCurrentList(currentClassId);
+            syncLocalToCloud();
         }
 
-        window.renderTable = function(students, highlightNom = null) {
+        window.refreshCurrentList = function(classId) {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const students = allStudents[classId] || [];
+            renderTable(students);
+            calculerStats(students);
+        }
+
+        function renderTable(students) {
             const tbody = document.getElementById('elevesTableBody');
-            tbody.innerHTML = "";
-            students.forEach((s, idx) => {
-                const tr = document.createElement('tr');
-                if (s.abandon) tr.classList.add('abandonne');
-                if (highlightNom && s.nom === highlightNom) tr.classList.add('new-entry');
-                tr.innerHTML = `
-                    <td class="fw-bold" style="cursor:pointer" onclick="ouvrirModaleUpdate(${idx})">${s.nom}</td>
+            tbody.innerHTML = students.map((s, idx) => `
+                <tr class="${s.abandon ? 'abandonne' : ''}">
+                    <td class="fw-bold">${s.nom}</td>
                     <td>${s.sexe}</td>
                     <td><span class="badge bg-light text-dark border">${s.statut}</span></td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary" onclick="ouvrirModaleUpdate(${idx})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-warning mx-1" onclick="toggleAbandon(${idx})"><i class="bi bi-slash-circle"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="supprimerEleve(${idx})"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="ouvrirModaleUpdate(${idx}, '${currentClassId}')"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-warning mx-1" onclick="toggleAbandon(${idx}, '${currentClassId}')" title="Abandon/Réintégration">
+                            <i class="bi ${s.abandon ? 'bi-check-circle' : 'bi-slash-circle'}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="supprimerEleve(${idx}, '${currentClassId}')"><i class="bi bi-trash"></i></button>
                     </td>
-                `;
-                tbody.appendChild(tr);
-            });
+                </tr>
+            `).join('');
         }
 
-        window.calculerStats = function(students) {
-            document.getElementById('stat_total').textContent = students.length;
-            document.getElementById('stat_filles').textContent = students.filter(s => s.sexe === 'F').length;
-            document.getElementById('stat_garcons').textContent = students.filter(s => s.sexe === 'M').length;
-            document.getElementById('stat_fe').textContent = students.filter(s => s.statut === 'FE').length;
-            document.getElementById('stat_orphelins').textContent = students.filter(s => s.statut === 'Orphelin').length;
-            document.getElementById('stat_standard').textContent = students.filter(s => s.statut === 'Standard').length;
+        function calculerStats(students) {
+            const active = students.filter(s => !s.abandon);
+            document.getElementById('stat_total').textContent = active.length;
+            document.getElementById('stat_filles').textContent = active.filter(s => s.sexe === 'F').length;
+            document.getElementById('stat_garcons').textContent = active.filter(s => s.sexe === 'M').length;
+            document.getElementById('stat_fe').textContent = active.filter(s => s.statut === 'FE').length;
+            document.getElementById('stat_orphelins').textContent = active.filter(s => s.statut === 'Orphelin').length;
+            document.getElementById('stat_standard').textContent = active.filter(s => s.statut === 'Standard').length;
         }
 
-        window.ouvrirModaleUpdate = function(index, classId = currentClassId) {
-            const students = JSON.parse(localStorage.getItem(STUDENTS_KEY))[classId];
-            const s = students[index];
+        window.ouvrirModaleUpdate = function(index, classId) {
+            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const s = allStudents[classId][index];
             document.getElementById('edit_index').value = index;
             document.getElementById('edit_class_id_hidden').value = classId;
             document.getElementById('edit_nom').value = s.nom;
@@ -682,64 +683,54 @@
         }
 
         window.sauvegarderModif = function() {
-            const index = document.getElementById('edit_index').value;
+            const idx = document.getElementById('edit_index').value;
             const classId = document.getElementById('edit_class_id_hidden').value;
-            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
-            const newNom = document.getElementById('edit_nom').value.toUpperCase();
-            allStudents[classId][index].nom = newNom;
-            allStudents[classId][index].sexe = document.getElementById('edit_sexe').value;
-            allStudents[classId][index].statut = document.getElementById('edit_statut').value;
-            allStudents[classId].sort((a, b) => a.nom.localeCompare(b.nom));
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            
+            allStudents[classId][idx].nom = document.getElementById('edit_nom').value.toUpperCase();
+            allStudents[classId][idx].sexe = document.getElementById('edit_sexe').value;
+            allStudents[classId][idx].statut = document.getElementById('edit_statut').value;
+            
             localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
-            window.syncLocalToCloud();
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
-            if(!document.getElementById('searchResultDisplay').classList.contains('d-none')) selectionnerEleve(classId, index);
-            refreshCurrentList(classId, newNom);
-        }
-
-        window.toggleAbandon = function(index, classId = currentClassId) {
-            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
-            allStudents[classId][index].abandon = !allStudents[classId][index].abandon;
-            localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
-            window.syncLocalToCloud();
-            if(!document.getElementById('searchResultDisplay').classList.contains('d-none')) selectionnerEleve(classId, index);
             refreshCurrentList(classId);
+            syncLocalToCloud();
         }
 
-        window.abandonnerViaModale = function() {
-            toggleAbandon(document.getElementById('edit_index').value, document.getElementById('edit_class_id_hidden').value);
-            bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
-        }
-
-        window.supprimerEleve = function(index, classId = currentClassId) {
-            if (confirm("Supprimer définitivement cet élève ?")) {
-                let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY));
-                allStudents[classId].splice(index, 1);
+        window.toggleAbandon = function(index, classId) {
+            let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+            const currentStatus = allStudents[classId][index].abandon;
+            if(confirm(currentStatus ? "Réintégrer cet élève ?" : "Marquer cet élève comme ayant abandonné ?")) {
+                allStudents[classId][index].abandon = !currentStatus;
                 localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
-                window.syncLocalToCloud();
-                fermerFiche();
                 refreshCurrentList(classId);
+                syncLocalToCloud();
             }
         }
 
-        window.supprimerViaModale = function() {
-            const index = document.getElementById('edit_index').value;
-            const classId = document.getElementById('edit_class_id_hidden').value;
+        window.supprimerEleve = function(index, classId) {
+            if(confirm("Action irréversible. Supprimer définitivement cet élève ?")) {
+                let allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                allStudents[classId].splice(index, 1);
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(allStudents));
+                refreshCurrentList(classId);
+                syncLocalToCloud();
+            }
+        }
+
+        window.abandonnerViaModale = function() {
+            const idx = document.getElementById('edit_index').value;
+            const cid = document.getElementById('edit_class_id_hidden').value;
             bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
-            supprimerEleve(index, classId);
+            toggleAbandon(idx, cid);
         }
 
-        window.refreshCurrentList = function(classId = currentClassId, highlight = null) {
-            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
-            const students = allStudents[classId] || [];
-            renderTable(students, highlight);
-            calculerStats(students);
+        window.supprimerViaModale = function() {
+            const idx = document.getElementById('edit_index').value;
+            const cid = document.getElementById('edit_class_id_hidden').value;
+            bootstrap.Modal.getInstance(document.getElementById('modalUpdateEleve')).hide();
+            supprimerEleve(idx, cid);
         }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) document.getElementById('searchResults').classList.add('d-none');
-        });
-
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -569,7 +569,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
@@ -589,6 +589,7 @@
         window.fbRef = ref;
         window.fbSet = set;
         window.fbUpdate = update;
+        window.fbRemove = remove;
         window.fbOnValue = onValue;
 
         // Monitoring de la connexion
@@ -616,6 +617,8 @@
         const STORAGE_KEY = 'wicompta_settings_data';
         const STUDENTS_KEY = 'wicompta_students_per_class';
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const AUTH_KEY = 'wicompta_auth_session';
 
         // --- SYNCHRONISATION CLOUD ---
 
@@ -626,6 +629,17 @@
                 students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
                 masterData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY))
             };
+            
+            // Ajouter les données financières de toutes les années
+            const financeData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(FINANCE_KEY)) {
+                    financeData[key] = JSON.parse(localStorage.getItem(key));
+                }
+            }
+            data.financeRecords = financeData;
+            
             window.fbSet(window.fbRef(window.fbDB, 'config_global'), data)
                 .catch(e => console.error("Erreur Sync Cloud:", e));
         }
@@ -638,6 +652,14 @@
                     if (cloudData.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData.settings));
                     if (cloudData.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(cloudData.students));
                     if (cloudData.masterData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(cloudData.masterData));
+                    
+                    // Restaurer les données financières
+                    if (cloudData.financeRecords) {
+                        Object.keys(cloudData.financeRecords).forEach(key => {
+                            localStorage.setItem(key, JSON.stringify(cloudData.financeRecords[key]));
+                        });
+                    }
+                    
                     loadFromLocalStorage(true); // Recharger l'UI sans boucle infinie
                 }
             }, { onlyOnce: true });
@@ -777,7 +799,6 @@
         }
 
         function loadFromLocalStorage(fromSync = false) {
-            const AUTH_KEY = 'wicompta_auth_session';
             const session = JSON.parse(localStorage.getItem(AUTH_KEY));
             if (!session || !session.isLoggedIn) {
                 window.location.href = 'login.html';
@@ -1141,10 +1162,20 @@
         }
 
         function exporterDonneesJSON() {
+            // Collecter toutes les données financières
+            const financeRecords = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(FINANCE_KEY)) {
+                    financeRecords[key] = JSON.parse(localStorage.getItem(key));
+                }
+            }
+            
             const backup = { 
                 settings: JSON.parse(localStorage.getItem(STORAGE_KEY)), 
                 students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
                 annualData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY)),
+                financeRecords: financeRecords,
                 date: new Date().toISOString() 
             };
             const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
@@ -1161,6 +1192,14 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings));
                 localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students));
                 if(data.annualData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.annualData));
+                
+                // Restaurer les données financières
+                if (data.financeRecords) {
+                    Object.keys(data.financeRecords).forEach(key => {
+                        localStorage.setItem(key, JSON.stringify(data.financeRecords[key]));
+                    });
+                }
+                
                 syncToCloud();
                 location.reload();
             };
@@ -1168,16 +1207,81 @@
         }
 
         function reinitialiserApplication() { 
-            if(confirm("Supprimer TOUTES les données ? (Cette action videra aussi le cloud)")) { 
-                localStorage.clear(); 
-                if(window.fbDB) window.fbSet(window.fbRef(window.fbDB, 'config_global'), null);
-                location.reload(); 
+            if(confirm("⚠️ SUPPRESSION TOTALE ⚠️\n\nCette action va effacer définitivement :\n- Toutes les classes et élèves\n- Tous les frais et tarifs\n- Toutes les exonérations\n- Tous les paiements et historiques financiers\n- Tous les paramètres de configuration\n\nLes données cloud seront également supprimées.\n\nVoulez-vous vraiment réinitialiser COMPLÈTEMENT l'application ?")) { 
+                
+                // 1️⃣ SUPPRIMER TOUTES LES DONNÉES LOCALSTORAGE
+                localStorage.clear();
+                
+                // 2️⃣ SUPPRIMER TOUTES LES DONNÉES CLOUD
+                if(window.fbDB) {
+                    // Supprimer le nœud principal config_global
+                    window.fbRemove(window.fbRef(window.fbDB, 'config_global'))
+                        .then(() => {
+                            console.log("✅ Données cloud (config_global) supprimées avec succès");
+                        })
+                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (config_global):", e));
+                    
+                    // Supprimer également les données financières stockées séparément (si existantes)
+                    window.fbRemove(window.fbRef(window.fbDB, 'finances'))
+                        .then(() => {
+                            console.log("✅ Données cloud (finances) supprimées avec succès");
+                        })
+                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (finances):", e));
+                    
+                    // Supprimer également cloud_storage utilisé par d'autres pages
+                    window.fbRemove(window.fbRef(window.fbDB, 'cloud_storage'))
+                        .then(() => {
+                            console.log("✅ Données cloud (cloud_storage) supprimées avec succès");
+                        })
+                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (cloud_storage):", e));
+                }
+                
+                // 3️⃣ REINITIALISER L'ÉTAT LOCAL DE L'APPLICATION
+                isLocked = false;
+                tempImportedData = [];
+                
+                // 4️⃣ REINITIALISER LES ÉLÉMENTS UI
+                document.getElementById('container_classes').innerHTML = "";
+                document.getElementById('container_charges').innerHTML = "";
+                document.getElementById('container_exons').innerHTML = "";
+                
+                document.getElementById('id_pays').value = "";
+                document.getElementById('id_dept').value = "";
+                document.getElementById('id_commune').value = "";
+                document.getElementById('inputEtablissement').value = "";
+                document.getElementById('id_comptable').value = "";
+                
+                // Réinitialiser les selects
+                const anneeSelect = document.getElementById('list_annee');
+                anneeSelect.innerHTML = '<option value="">Choisir...</option><option>2025-2026</option>';
+                
+                const cycleSelect = document.getElementById('list_cycle');
+                cycleSelect.innerHTML = '<option value="">Choisir...</option>';
+                
+                const classeSelect = document.getElementById('list_classe');
+                classeSelect.innerHTML = '<option value="">Choisir...</option>';
+                
+                // Mettre à jour les compteurs
+                updateCounters();
+                updateExonSelects();
+                updateChargeClassesSelect();
+                
+                // Forcer le déverrouillage
+                handleLock(document.getElementById('mainLockBtn'), false, true);
+                
+                // 5️⃣ MESSAGE DE SUCCÈS
+                showSuccess("✅ Application complètement réinitialisée !\nToutes les données ont été effacées.", "Réinitialisation Réussie");
+                
+                // 6️⃣ RECHARGEMENT APRÈS UN COURT DÉLAI
+                setTimeout(() => {
+                    location.reload(); 
+                }, 2000);
             } 
         }
 
         function logout() {
             if(confirm("Voulez-vous vous déconnecter ?")) {
-                localStorage.removeItem('wicompta_auth_session');
+                localStorage.removeItem(AUTH_KEY);
                 window.location.href = 'login.html';
             }
         }

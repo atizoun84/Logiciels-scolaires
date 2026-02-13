@@ -129,7 +129,6 @@
         .stat-label-fix { font-size: 0.65rem; white-space: nowrap; font-weight: 700; }
         .stat-val-fix { font-size: 0.9rem; font-weight: 700; }
 
-        /* Style pour l'indicateur de synchronisation Firebase */
         #firebase-sync-badge {
             position: fixed;
             bottom: 10px;
@@ -299,7 +298,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, get, set } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA-vrnONwTgVHRLj8hjY2ox9D3AZbiuIGE",
@@ -311,119 +310,203 @@
             databaseURL: "https://gestion-recouvrement-college-default-rtdb.europe-west1.firebasedatabase.app/"
         };
 
-        // Init
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const badge = document.getElementById('firebase-sync-badge');
 
-        // Liste des clés localStorage à synchroniser
-        const keysToSync = [
-            'wicompta_settings_data', 
-            'wicompta_students_per_class', 
-            'wicompta_master_annual_data', 
-            'wicompta_config_creds',
-            'winTailor_identity'
-        ];
+        window.isDataLoadedFromCloud = false;
+        window.firebaseDB = db;
+        window.dbRefs = { ref, onValue, set, update, get };
 
-        // 1. GESTION DE L'ETAT DE CONNEXION
-        const connectedRef = ref(db, ".info/connected");
-        onValue(connectedRef, (snap) => {
-            if (snap.val() === true) {
-                badge.className = "sync-online";
-                badge.innerHTML = '<i class="bi bi-cloud-check-fill"></i> Temps Réel (Cloud)';
-            } else {
-                badge.className = "sync-offline";
-                badge.innerHTML = '<i class="bi bi-cloud-slash"></i> Mode Hors-ligne';
-            }
-        });
-
-        // 2. LECTURE AUTOMATIQUE DEPUIS LE CLOUD (Initialisation)
-        const storageRef = ref(db, 'app_data');
-        onValue(storageRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    // On ne met à jour localement que si différent (évite boucles infinies)
-                    const localVal = localStorage.getItem(key);
-                    const remoteVal = JSON.stringify(data[key]);
-                    if (localVal !== remoteVal) {
-                        localStorage.setItem(key, remoteVal);
-                    }
-                });
-                // Déclencher un rafraîchissement des calculs sans recharger la page
-                if(typeof window.initialiserFiltres === 'function') window.initialiserFiltres();
-                if(typeof window.calculerPlaquetteGlobale === 'function') window.calculerPlaquetteGlobale();
-            }
-        });
-
-        // 3. SAUVEGARDE AUTOMATIQUE (CLOUD SYNC)
-        window.pushToCloud = function() {
-            const payload = {};
-            // On récupère tout ce qui est important
-            keysToSync.forEach(key => {
-                const val = localStorage.getItem(key);
-                if(val) payload[key] = JSON.parse(val);
-            });
-
-            // Gérer les clés de finance dynamiques (pour chaque année)
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k.startsWith('wicompta_finance_records')) {
-                    payload[k] = JSON.parse(localStorage.getItem(k));
-                }
-            }
-
-            update(ref(db, 'app_data'), payload).catch(e => console.error("Sync Error:", e));
-        };
-
-        // Détecter tout changement dans le localStorage pour pousser vers le cloud
-        window.addEventListener('storage', () => window.pushToCloud());
-        
-        // Surveillance périodique (toutes les 5 sec) pour assurer la synchro en cas de modifications JS pures
-        setInterval(() => window.pushToCloud(), 5000);
-
-    </script>
-
-    <script>
-        // --- LOGIQUE ORIGINALE PRÉSERVÉE ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Correction du chemin pour éviter l'erreur Blob
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW enregistré'))
-                    .catch(err => console.log('Erreur SW:', err));
-            });
-        }
-
+        // CONSTANTES (importées depuis maj_eleve.html et finances.html)
         const STORAGE_KEY = 'wicompta_settings_data';
         const STUDENTS_KEY = 'wicompta_students_per_class';
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
         const FINANCE_KEY = 'wicompta_finance_records';
         const AUTH_KEY = 'wicompta_auth_session';
         const CONFIG_KEY = 'wicompta_config_creds';
+        const IDENTITY_KEY = 'winTailor_identity';
+
+        const keysToSync = [
+            STORAGE_KEY,
+            STUDENTS_KEY,
+            MASTER_DATA_KEY,
+            CONFIG_KEY,
+            IDENTITY_KEY
+        ];
+
+        // Fonction de synchronisation vers le cloud (importée de maj_eleve.html)
+        window.syncLocalToCloud = function() {
+            if (!window.isDataLoadedFromCloud || !navigator.onLine) return Promise.resolve();
+            
+            const dataToSync = {
+                settings: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+                students: JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}"),
+                master: JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}"),
+                config: JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}"),
+                identity: JSON.parse(localStorage.getItem(IDENTITY_KEY) || "{}")
+            };
+
+            // Ajout dynamique des records financiers par année
+            const activeAnnee = getActiveYear();
+            if (activeAnnee) {
+                const finKey = `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+                dataToSync[finKey] = JSON.parse(localStorage.getItem(finKey) || "{}");
+            }
+            
+            return update(ref(db, 'cloud_storage/'), dataToSync)
+                .then(() => updateCloudIndicator(true))
+                .catch((e) => {
+                    console.error("Sync Error:", e);
+                    updateCloudIndicator(false);
+                    return Promise.reject(e);
+                });
+        }
+
+        // Fonction de synchronisation spécifique aux finances (importée de finances.html)
+        window.syncFinanceToCloud = async function(yearKey, uniqueId, record) {
+            if (!window.firebaseDB) return;
+            try {
+                await window.dbRefs.set(window.dbRefs.ref(window.firebaseDB, `finances/${yearKey}/${uniqueId}`), record);
+            } catch (e) {
+                console.error("Erreur Cloud Finance:", e);
+            }
+        };
+
+        // Fonction pour écouter les changements financiers (importée de finances.html)
+        window.listenFinanceChanges = function(yearKey, callback) {
+            if (!window.firebaseDB) return;
+            const dbRef = window.dbRefs.ref(window.firebaseDB, 'finances/' + yearKey);
+            window.dbRefs.onValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    localStorage.setItem(yearKey, JSON.stringify(data));
+                    if (callback) callback(data);
+                    if (typeof window.refreshAllUI === 'function') window.refreshAllUI();
+                }
+            });
+        };
+
+        function updateCloudIndicator(online) {
+            const icon = badge;
+            if(online) {
+                icon.className = "sync-online";
+                icon.innerHTML = '<i class="bi bi-cloud-check-fill"></i> Temps Réel (Cloud)';
+            } else {
+                icon.className = "sync-offline";
+                icon.innerHTML = '<i class="bi bi-cloud-slash"></i> Mode Hors-ligne';
+            }
+        }
+
+        onValue(ref(db, ".info/connected"), (snap) => {
+            updateCloudIndicator(snap.val() === true);
+        });
+
+        async function initialSync() {
+            try {
+                const snapshot = await get(ref(db, 'cloud_storage/'));
+                const data = snapshot.val();
+                if (data) {
+                    if(data.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings));
+                    if(data.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students));
+                    if(data.master) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.master));
+                    if(data.config) localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config));
+                    if(data.identity) localStorage.setItem(IDENTITY_KEY, JSON.stringify(data.identity));
+                    
+                    Object.keys(data).forEach(key => {
+                        if (key.startsWith(FINANCE_KEY)) {
+                            localStorage.setItem(key, JSON.stringify(data[key]));
+                        }
+                    });
+                    console.log("Initial Sync Complete");
+                }
+                window.isDataLoadedFromCloud = true;
+                
+                // Démarrer l'écoute des changements financiers pour l'année active
+                const activeAnnee = getActiveYear();
+                if (activeAnnee) {
+                    const yearKey = `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+                    window.listenFinanceChanges(yearKey);
+                }
+                
+                if(typeof window.refreshAllUI === 'function') window.refreshAllUI();
+            } catch (e) {
+                console.error("Initial Sync Error:", e);
+                window.isDataLoadedFromCloud = true;
+                if(typeof window.refreshAllUI === 'function') window.refreshAllUI();
+            }
+        }
+
+        onValue(ref(db, 'cloud_storage/'), (snapshot) => {
+            const data = snapshot.val();
+            if (data && snapshot.exists()) {
+                let changed = false;
+                if(data.settings) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings)); changed = true; }
+                if(data.students) { localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students)); changed = true; }
+                if(data.master) { localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.master)); changed = true; }
+                if(data.config) { localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config)); changed = true; }
+                if(data.identity) { localStorage.setItem(IDENTITY_KEY, JSON.stringify(data.identity)); changed = true; }
+                
+                Object.keys(data).forEach(key => {
+                    if (key.startsWith(FINANCE_KEY)) {
+                        localStorage.setItem(key, JSON.stringify(data[key]));
+                        changed = true;
+                    }
+                });
+                
+                if(changed && typeof window.refreshAllUI === 'function') window.refreshAllUI();
+            }
+        });
+
+        window.pushToCloud = window.syncLocalToCloud;
+
+        initialSync();
+
+        window.addEventListener('storage', (e) => {
+            if (typeof window.refreshAllUI === 'function') window.refreshAllUI();
+        });
+        
+        setInterval(() => { 
+            if (navigator.onLine && window.isDataLoadedFromCloud) window.syncLocalToCloud(); 
+        }, 15000);
+
+        // Rendre accessible depuis les scripts classiques
+        window.fbDB = db;
+    </script>
+
+    <script>
+        // CONSTANTES (définies également pour les scripts classiques)
+        const STORAGE_KEY = 'wicompta_settings_data';
+        const STUDENTS_KEY = 'wicompta_students_per_class';
+        const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const FINANCE_KEY = 'wicompta_finance_records';
+        const AUTH_KEY = 'wicompta_auth_session';
+        const CONFIG_KEY = 'wicompta_config_creds';
+        const IDENTITY_KEY = 'winTailor_identity';
+        
         let activeAnnee = "2025-2026";
 
-        window.onload = function() {
-            checkAuth();
+        window.refreshAllUI = function() {
             loadIdentity();
             initialiserFiltres();
             calculerPlaquetteGlobale();
+            const currentFilter = document.getElementById('filter_classe').value;
+            if(currentFilter) calculerStatsClasse();
+        };
+
+        window.onload = function() {
+            checkAuth();
+            window.refreshAllUI();
         };
 
         function checkAuth() {
             const session = JSON.parse(localStorage.getItem(AUTH_KEY));
-            const config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
-                comptable: { label: "Comptable (Admin)" },
-                agent: { label: "Agent de recouvrement" },
-                utilisateur: { label: "Utilisateur" }
-            };
-
             if (!session || !session.isLoggedIn) {
                 window.location.href = 'login.html';
                 return;
             }
-
-            const roleLabel = config[session.role] ? config[session.role].label : session.role;
+            const config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {};
+            const roleLabel = config[session.role]?.label || session.role;
             document.getElementById('displayRole').textContent = roleLabel;
 
             if (session.role === 'utilisateur' && window.location.pathname.includes('index.html')) {
@@ -432,32 +515,58 @@
         }
 
         function logout() {
-            localStorage.removeItem(AUTH_KEY);
-            window.location.href = 'login.html';
+            if(confirm("Voulez-vous vraiment vous déconnecter ?")) {
+                localStorage.removeItem(AUTH_KEY);
+                window.location.href = 'login.html';
+            }
+        }
+
+        function getActiveYear() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    return data.options.activeYear || (data.options.annees && data.options.annees[0]) || "2025-2026";
+                } catch(e) {
+                    return "2025-2026";
+                }
+            }
+            return "2025-2026";
         }
 
         function loadIdentity() {
             const savedData = localStorage.getItem(STORAGE_KEY);
-            const identityData = localStorage.getItem('winTailor_identity');
+            const identityData = localStorage.getItem(IDENTITY_KEY);
             if (savedData) {
-                const data = JSON.parse(savedData);
-                const name = data.identification.nomEtab || "VOTRE ÉTABLISSEMENT";
-                activeAnnee = data.options.activeYear || "2025-2026";
-                document.getElementById('displayEtablissement').textContent = (name + " " + activeAnnee).toUpperCase();
-                
-                if (data.isLocked) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const name = data.identification.nomEtab || "VOTRE ÉTABLISSEMENT";
+                    activeAnnee = data.options.activeYear || (data.options.annees ? data.options.annees[0] : "2025-2026");
+                    document.getElementById('displayEtablissement').textContent = (name + " " + activeAnnee).toUpperCase();
+                    
                     const headerEtab = document.getElementById('headerEtabName');
                     headerEtab.textContent = (name + " " + activeAnnee).toUpperCase();
-                    headerEtab.classList.remove('d-none');
-                    document.getElementById('displayEtablissement').classList.add('d-none');
-                }
+                    if (data.isLocked) {
+                        headerEtab.classList.remove('d-none');
+                        document.getElementById('displayEtablissement').classList.add('d-none');
+                    } else {
+                        headerEtab.classList.add('d-none');
+                        document.getElementById('displayEtablissement').classList.remove('d-none');
+                    }
+                } catch(e) { console.error("Identity Load Error", e); }
             }
             if (identityData) {
                 try {
                     const data = JSON.parse(identityData);
+                    if (data.salonName) document.getElementById('headerSalonName').textContent = data.salonName;
                     const logoImg = document.getElementById('headerLogo');
-                    if (data.logoUrl) { logoImg.src = data.logoUrl; logoImg.classList.remove('d-none'); }
-                } catch (e) { console.error(e); }
+                    if (data.logoUrl) { 
+                        logoImg.src = data.logoUrl; 
+                        logoImg.classList.remove('d-none'); 
+                    } else {
+                        logoImg.classList.add('d-none');
+                    }
+                } catch (e) {}
             }
         }
 
@@ -466,16 +575,23 @@
         }
 
         function initialiserFiltres() {
-            const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            if (savedData && savedData.options.cycles) {
-                const cycleSelect = document.getElementById('filter_cycle');
-                // Nettoyage avant repeuplement
-                while (cycleSelect.options.length > 2) cycleSelect.remove(2);
-                
-                savedData.options.cycles.forEach(c => {
-                    if(c && c !== "Choisir...") cycleSelect.add(new Option(c, c));
-                });
-            }
+            const savedRaw = localStorage.getItem(STORAGE_KEY);
+            if (!savedRaw) return;
+            try {
+                const savedData = JSON.parse(savedRaw);
+                if (savedData && savedData.options && savedData.options.cycles) {
+                    const cycleSelect = document.getElementById('filter_cycle');
+                    const currentVal = cycleSelect.value;
+                    cycleSelect.innerHTML = '<option value="">Sélectionner un cycle</option><option value="ALL">TOUS LES CYCLES (ÉTABLISSEMENT)</option>';
+                    
+                    savedData.options.cycles.forEach(c => {
+                        if(c && c !== "Choisir...") {
+                            cycleSelect.add(new Option(c, c));
+                        }
+                    });
+                    if(currentVal) cycleSelect.value = currentVal;
+                }
+            } catch(e) { console.error("Erreur initialiserFiltres", e); }
         }
 
         function peuplerClasses() {
@@ -485,91 +601,125 @@
             
             if(selectedCycle === "ALL") {
                 classeSelect.add(new Option("TOUT L'ÉTABLISSEMENT (GLOBAL)", "GLOBAL_ALL"));
-            } else if (selectedCycle !== "") {
-                const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
-                Object.keys(allStudents).forEach(id => {
-                    if (id.startsWith(selectedCycle) && id.includes(activeAnnee)) {
-                        classeSelect.add(new Option(id.split('_')[1], id));
-                    }
-                });
+            } else if (selectedCycle && selectedCycle !== "") {
+                try {
+                    const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                    Object.keys(allStudents).forEach(id => {
+                        if (id.startsWith(selectedCycle) && id.includes(activeAnnee)) {
+                            const parts = id.split('_');
+                            classeSelect.add(new Option(parts[1], id));
+                        }
+                    });
+                } catch(e) { console.error("Erreur peuplerClasses", e); }
             }
             document.getElementById('statsSection').classList.add('d-none');
         }
 
         function getStudentFinance(s, classId) {
-            const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
-            const yearData = master[activeAnnee];
-            if (!yearData) return { base: 0, expected: 0, exo: 0 };
-            
-            const cycle = classId.split('_')[0];
-            const classeLabel = classId.split('_')[1];
-            
-            let totalBase = 0, totalReduction = 0;
-            const parser = new DOMParser();
-            
-            const chargesDoc = parser.parseFromString(yearData.chargesHTML || "", "text/html");
-            const chargesApplicables = [];
-            
-            chargesDoc.querySelectorAll('.list-group-item').forEach(cItem => {
-                const nomElement = cItem.querySelector('strong');
-                if(!nomElement) return;
-                const nom = nomElement.innerText.trim();
-                const montantVal = cItem.querySelector('.charge-montant-val');
-                const montant = montantVal ? parseInt(montantVal.textContent.replace(/\D/g, '')) : 0;
-                const cibleText = cItem.querySelector('.text-muted').innerText;
-
-                if (cibleText.includes(`Tout le cycle ${cycle}`) || (cibleText.includes("Classes:") && cibleText.includes(classeLabel))) {
-                    totalBase += montant;
-                    chargesApplicables.push({ nom, montant });
-                }
-            });
-
-            const exonsDoc = parser.parseFromString(yearData.exonsHTML || "", "text/html");
-            exonsDoc.querySelectorAll('.list-group-item').forEach(item => {
-                const ruleHeader = item.querySelector('strong').innerText;
-                const metaText = item.querySelector('small').innerText;
-                const ruleParts = ruleHeader.split('|');
+            try {
+                const master = JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}");
+                const yearData = master[activeAnnee];
+                if (!yearData) return { base: 0, expected: 0, exo: 0, nature: "Aucune", charges: [] };
                 
-                if (ruleParts[0].trim() !== cycle) return;
+                const cycle = classId.split('_')[0];
+                const classeLabel = classId.split('_')[1];
+                let totalBase = 0, totalReduction = 0;
+                let detailsExo = [];
+                let chargesDetaillees = [];
+                const parser = new DOMParser();
+                
+                // Parse charges (amélioré depuis finances.html)
+                const chargesDoc = parser.parseFromString(yearData.chargesHTML || "", "text/html");
+                chargesDoc.querySelectorAll('.list-group-item').forEach(cItem => {
+                    const nomElement = cItem.querySelector('strong');
+                    if(!nomElement) return;
+                    const nom = nomElement.innerText.trim();
+                    const mSpan = cItem.querySelector('.charge-montant-val');
+                    const mText = mSpan?.textContent || "0";
+                    const montant = parseInt(mText.replace(/\D/g, '')) || 0;
+                    const cibleText = cItem.querySelector('.text-muted')?.innerText || "";
 
-                const isSexeMatch = metaText.includes(`Genre: ${s.sexe}`) || metaText.includes(`/${s.sexe}`) || metaText.includes(`${s.sexe}/`);
-                const isStatutMatch = metaText.includes(`Statut: ${s.statut}`);
+                    let estCible = false;
+                    if (cibleText.includes(`Tout le cycle ${cycle}`)) estCible = true;
+                    else if (cibleText.includes("Classes:") && cibleText.includes(classeLabel)) estCible = true;
+                    
+                    if (estCible) {
+                        totalBase += montant;
+                        chargesDetaillees.push({ nom, montantInitial: montant, montantAttendu: montant, exo: 0 });
+                    }
+                });
 
-                if (isSexeMatch && isStatutMatch) {
-                    const targetCharge = chargesApplicables.find(c => c.nom === ruleParts[1].trim());
-                    if (targetCharge) totalReduction += targetCharge.montant;
-                }
-            });
-
-            return { base: totalBase, expected: Math.max(0, totalBase - totalReduction), exo: totalReduction };
+                // Parse exonérations (amélioré depuis finances.html)
+                const exonsDoc = parser.parseFromString(yearData.exonsHTML || "", "text/html");
+                exonsDoc.querySelectorAll('.list-group-item').forEach(item => {
+                    const ruleHeader = item.querySelector('strong')?.innerText || "";
+                    const metaText = item.querySelector('small')?.innerText || "";
+                    const ruleParts = ruleHeader.split('|');
+                    const ruleCycle = ruleParts[0]?.trim();
+                    const ruleCharge = ruleParts[1]?.trim();
+                    if (ruleCycle !== cycle) return;
+                    
+                    const isSexeMatch = metaText.includes(`Genre: ${s.sexe}`) || metaText.includes(`/${s.sexe}`) || metaText.includes(`${s.sexe}/`);
+                    const isStatutMatch = metaText.includes(`Statut: ${s.statut}`);
+                    
+                    if (isSexeMatch && isStatutMatch) {
+                        let target = chargesDetaillees.find(c => c.nom === ruleCharge);
+                        if (target) {
+                            target.exo = target.montantInitial;
+                            target.montantAttendu = 0;
+                            totalReduction += target.montantInitial;
+                            detailsExo.push(`${target.nom} (-${target.montantInitial.toLocaleString()})`);
+                        }
+                    }
+                });
+                
+                const expectedTotal = chargesDetaillees.reduce((sum, c) => sum + c.montantAttendu, 0);
+                return { 
+                    base: totalBase, 
+                    expected: expectedTotal, 
+                    exo: totalReduction, 
+                    nature: detailsExo.length > 0 ? detailsExo.join(', ') : "Aucune",
+                    charges: chargesDetaillees 
+                };
+            } catch(e) {
+                console.error("Erreur getStudentFinance", e);
+                return { base: 0, expected: 0, exo: 0, nature: "Erreur", charges: [] };
+            }
         }
 
         function calculerPlaquetteGlobale() {
-            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
-            const financeData = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}");
-            let g = { total: 0, paye: 0, duNet: 0, duBrut: 0, exo: 0 };
+            if (!activeAnnee) activeAnnee = getActiveYear();
+            try {
+                const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                const financeKey = getYearlyFinanceKey();
+                const financeData = JSON.parse(localStorage.getItem(financeKey) || "{}");
+                let g = { total: 0, paye: 0, duNet: 0, duBrut: 0, exo: 0 };
 
-            Object.keys(allStudents).forEach(classId => {
-                if (classId.includes(activeAnnee)) {
-                    allStudents[classId].forEach((s, idx) => {
-                        const fin = getStudentFinance(s, classId);
-                        const uniqueId = `${classId}_${s.nom}_${idx}`;
-                        const paid = financeData[uniqueId]?.paid || 0;
-                        g.total++;
-                        g.paye += paid;
-                        g.duBrut += fin.base;
-                        g.duNet += fin.expected;
-                        g.exo += fin.exo;
-                    });
-                }
-            });
+                Object.keys(allStudents).forEach(classId => {
+                    if (classId.includes(activeAnnee)) {
+                        allStudents[classId].forEach((s, idx) => {
+                            if (s.abandon) return; 
+                            const fin = getStudentFinance(s, classId);
+                            const uniqueId = `${classId}_${s.nom}_${idx}`;
+                            const paid = financeData[uniqueId]?.paid || 0;
+                            g.total++;
+                            g.paye += paid;
+                            g.duBrut += fin.base;
+                            g.duNet += fin.expected;
+                            g.exo += fin.exo;
+                        });
+                    }
+                });
 
-            document.getElementById('g_total_du').textContent = g.duBrut.toLocaleString() + " F";
-            document.getElementById('g_paye').textContent = g.paye.toLocaleString() + " F";
-            document.getElementById('g_reste').textContent = Math.max(0, g.duNet - g.paye).toLocaleString() + " F";
-            document.getElementById('g_exo').textContent = g.exo.toLocaleString() + " F";
-            document.getElementById('g_total').textContent = g.total;
-            document.getElementById('g_taux').textContent = g.duNet > 0 ? Math.round((g.paye/g.duNet)*100) + "%" : "0%";
+                document.getElementById('g_total_du').textContent = g.duBrut.toLocaleString() + " F";
+                document.getElementById('g_paye').textContent = g.paye.toLocaleString() + " F";
+                document.getElementById('g_reste').textContent = Math.max(0, g.duNet - g.paye).toLocaleString() + " F";
+                document.getElementById('g_exo').textContent = g.exo.toLocaleString() + " F";
+                document.getElementById('g_total').textContent = g.total;
+                document.getElementById('g_taux').textContent = g.duNet > 0 ? Math.round((g.paye/g.duNet)*100) + "%" : "0%";
+            } catch(e) {
+                console.error("Erreur calculerPlaquetteGlobale", e);
+            }
         }
 
         function calculerStatsClasse() {
@@ -577,60 +727,101 @@
             if (!classId) return;
             document.getElementById('statsSection').classList.remove('d-none');
 
-            const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
-            const financeData = JSON.parse(localStorage.getItem(getYearlyFinanceKey()) || "{}");
-            
-            let studentsToProcess = [];
-            if(classId === "GLOBAL_ALL") {
-                Object.keys(allStudents).forEach(cid => {
-                    if(cid.includes(activeAnnee)) {
-                        allStudents[cid].forEach((s, idx) => {
-                            studentsToProcess.push({ s, cid, idx });
+            try {
+                const allStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}");
+                const financeKey = getYearlyFinanceKey();
+                const financeData = JSON.parse(localStorage.getItem(financeKey) || "{}");
+                let studentsToProcess = [];
+                
+                if(classId === "GLOBAL_ALL") {
+                    Object.keys(allStudents).forEach(cid => {
+                        if(cid.includes(activeAnnee)) {
+                            allStudents[cid].forEach((s, idx) => { 
+                                if(!s.abandon) studentsToProcess.push({ s, cid, idx }); 
+                            });
+                        }
+                    });
+                } else {
+                    (allStudents[classId] || []).forEach((s, idx) => { 
+                        if(!s.abandon) studentsToProcess.push({ s, cid: classId, idx }); 
+                    });
+                }
+
+                let st = { m: {t:0, s:0, r:0}, f: {t:0, s:0, r:0}, t: {t:0, s:0, r:0}, duNet: 0, paye: 0 };
+                let exos = {}; 
+
+                studentsToProcess.forEach(item => {
+                    const fin = getStudentFinance(item.s, item.cid);
+                    const uniqueId = `${item.cid}_${item.s.nom}_${item.idx}`;
+                    const paid = financeData[uniqueId]?.paid || 0;
+                    const isSolded = paid >= fin.expected && fin.expected > 0;
+                    const key = (item.s.sexe && item.s.sexe.toUpperCase() === 'M') ? 'm' : 'f';
+
+                    st[key].t++; 
+                    st.t.t++; 
+                    st.duNet += fin.expected; 
+                    st.paye += paid;
+                    
+                    if(isSolded) { 
+                        st[key].s++; 
+                        st.t.s++; 
+                    } else { 
+                        st[key].r++; 
+                        st.t.r++; 
+                    }
+
+                    if(!exos[item.s.statut]) exos[item.s.statut] = { m:0, f:0 };
+                    exos[item.s.statut][key] += fin.exo;
+                });
+
+                // Mise à jour des éléments UI
+                ['m','f','t'].forEach(k => {
+                    const el_total = document.getElementById(`${k}_total`);
+                    const el_solde = document.getElementById(`${k}_solde`);
+                    const el_reste = document.getElementById(`${k}_reste_n`);
+                    if(el_total) el_total.textContent = st[k].t;
+                    if(el_solde) el_solde.textContent = st[k].s;
+                    if(el_reste) el_reste.textContent = st[k].r;
+                });
+                
+                const tauxEl = document.getElementById('classe_taux');
+                if(tauxEl) {
+                    tauxEl.textContent = st.duNet > 0 ? Math.round((st.paye/st.duNet)*100) + "%" : "0%";
+                }
+
+                const exoBody = document.getElementById('table_exonerations');
+                if(exoBody) {
+                    exoBody.innerHTML = "";
+                    if(Object.keys(exos).length === 0) {
+                        exoBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aucune exonération</td></tr>';
+                    } else {
+                        Object.keys(exos).forEach(statut => {
+                            const total = exos[statut].m + exos[statut].f;
+                            const row = `<tr>
+                                <td>${statut}</td>
+                                <td class="text-center col-male">${exos[statut].m.toLocaleString()}</td>
+                                <td class="text-center col-female">${exos[statut].f.toLocaleString()}</td>
+                                <td class="text-center fw-bold">${total.toLocaleString()}</td>
+                            </tr>`;
+                            exoBody.innerHTML += row;
                         });
                     }
-                });
-            } else {
-                (allStudents[classId] || []).forEach((s, idx) => {
-                    studentsToProcess.push({ s, cid: classId, idx });
-                });
+                }
+            } catch(e) {
+                console.error("Erreur calculerStatsClasse", e);
             }
-
-            let st = { m: {t:0, s:0, r:0}, f: {t:0, s:0, r:0}, t: {t:0, s:0, r:0}, duNet: 0, paye: 0 };
-            let exos = {}; 
-
-            studentsToProcess.forEach(item => {
-                const fin = getStudentFinance(item.s, item.cid);
-                const uniqueId = `${item.cid}_${item.s.nom}_${item.idx}`;
-                const paid = financeData[uniqueId]?.paid || 0;
-                const isSolded = paid >= fin.expected && fin.expected > 0;
-                const key = item.s.sexe === 'M' ? 'm' : 'f';
-
-                st[key].t++;
-                st.t.t++;
-                st.duNet += fin.expected;
-                st.paye += paid;
-
-                if(isSolded) { st[key].s++; st.t.s++; }
-                else { st[key].r++; st.t.r++; }
-
-                if(!exos[item.s.statut]) exos[item.s.statut] = { m:0, f:0 };
-                exos[item.s.statut][key] += fin.exo;
-            });
-
-            ['m','f','t'].forEach(k => {
-                document.getElementById(`${k}_total`).textContent = st[k].t;
-                document.getElementById(`${k}_solde`).textContent = st[k].s;
-                document.getElementById(`${k}_reste_n`).textContent = st[k].r;
-            });
-            document.getElementById('classe_taux').textContent = st.duNet > 0 ? Math.round((st.paye/st.duNet)*100) + "%" : "0%";
-
-            const exoBody = document.getElementById('table_exonerations');
-            exoBody.innerHTML = "";
-            Object.keys(exos).forEach(statut => {
-                const row = `<tr><td>${statut}</td><td class="text-center col-male">${exos[statut].m.toLocaleString()}</td><td class="text-center col-female">${exos[statut].f.toLocaleString()}</td><td class="text-center fw-bold">${(exos[statut].m + exos[statut].f).toLocaleString()}</td></tr>`;
-                exoBody.innerHTML += row;
-            });
         }
+
+        // Exposer les fonctions nécessaires globalement
+        window.peuplerClasses = peuplerClasses;
+        window.calculerStatsClasse = calculerStatsClasse;
+        window.initialiserFiltres = initialiserFiltres;
+        window.loadIdentity = loadIdentity;
+        window.calculerPlaquetteGlobale = calculerPlaquetteGlobale;
+        window.getActiveYear = getActiveYear;
+        window.getYearlyFinanceKey = getYearlyFinanceKey;
+        window.logout = logout;
+        window.getStudentFinance = getStudentFinance; // Export pour utilisation éventuelle
     </script>
 </body>
 </html>
