@@ -130,6 +130,41 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
+        /* Style pour la signature */
+        .signature-img {
+            max-height: 60px;
+            max-width: 150px;
+            object-fit: contain;
+            margin-top: 5px;
+        }
+
+        /* Style pour le tableau récapitulatif */
+        .recap-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            border: 2px solid #000;
+        }
+        .recap-table th {
+            background: #d1d5db !important;
+            border: 1px solid #000 !important;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .recap-table td {
+            border: 1px solid #000 !important;
+            padding: 6px;
+            text-align: right;
+        }
+        .recap-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background: #f3f4f6;
+        }
+
         @media print {
             @page { size: portrait; margin: 1cm; }
             body * { visibility: hidden; }
@@ -151,6 +186,20 @@
             }
             .table-admin th, .table-admin td { border: 1pt solid black !important; }
             .no-print { display: none !important; }
+            
+            /* Assurer l'impression de la signature */
+            .signature-img {
+                max-height: 60px;
+                max-width: 150px;
+            }
+            
+            /* Assurer l'impression du tableau récapitulatif */
+            .recap-table {
+                border: 2pt solid black !important;
+            }
+            .recap-table th, .recap-table td {
+                border: 1pt solid black !important;
+            }
         }
     </style>
 </head>
@@ -283,6 +332,7 @@
         const AUTH_KEY = 'wicompta_auth_session';
         const CONFIG_KEY = 'wicompta_config_creds';
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const SIGNATURE_KEY = 'wicompta_signature';  // Clé pour la signature
 
         // Synchronisation Firebase vers Local (Temps Réel)
         function initSync() {
@@ -293,7 +343,8 @@
                 { key: STORAGE_KEY, path: 'settings' },
                 { key: STUDENTS_KEY, path: 'students' },
                 { key: MASTER_DATA_KEY, path: 'master_data' },
-                { key: SIG_PLACE_KEY, path: 'ui_settings/sig_place' }
+                { key: SIG_PLACE_KEY, path: 'ui_settings/sig_place' },
+                { key: SIGNATURE_KEY, path: 'signature' }  // Ajout de la signature
             ];
 
             refs.forEach(item => {
@@ -369,6 +420,9 @@
             const lieuSignature = document.getElementById('inputLieuSignature').value || (settings ? settings.identification.commune : "");
             const activeYear = settings ? settings.options.activeYear : "2025-2026";
 
+            // Récupérer la signature depuis le localStorage
+            const signatureData = localStorage.getItem(SIGNATURE_KEY);
+
             // Sauvegarde du lieu vers le Cloud
             saveToCloud('ui_settings/sig_place', lieuSignature);
             localStorage.setItem(SIG_PLACE_KEY, lieuSignature);
@@ -396,6 +450,12 @@
                     <h4 class="text-center fw-bold text-decoration-underline mb-4">ÉTAT DE DROIT CONSTATÉ</h4>
             `;
 
+            // Variables pour le récapitulatif
+            let totalDroitDuGlobal = 0;
+            let totalPayeGlobal = 0;
+            let totalResteGlobal = 0;
+            let classesRecap = [];
+
             targetClasses.forEach(cid => {
                 const students = allStudents[cid] || [];
                 const parts = cid.split('_');
@@ -403,6 +463,11 @@
                 const className = parts[1];
                 const totalG = students.filter(s => s.sexe === 'M').length;
                 const totalF = students.filter(s => s.sexe === 'F').length;
+                
+                // Variables pour le récapitulatif par classe
+                let totalDroitClasse = 0;
+                let totalPayeClasse = 0;
+                let totalResteClasse = 0;
 
                 html += `
                     <div class="mb-5">
@@ -439,6 +504,9 @@
                     const record = financeData[uniqueId];
                     const paid = record?.paid || 0;
                     
+                    totalDroitClasse += fin.expected;
+                    totalPayeClasse += paid;
+                    
                     let detailsHtml = '';
                     if (record && record.chargesPaid) {
                         const chargesPayees = Object.entries(record.chargesPaid)
@@ -470,17 +538,94 @@
                         </tr>
                     `;
                 });
+                
+                const resteClasse = totalDroitClasse - totalPayeClasse;
+                totalDroitDuGlobal += totalDroitClasse;
+                totalPayeGlobal += totalPayeClasse;
+                
+                classesRecap.push({
+                    nom: className,
+                    cycle: cycleName,
+                    effectif: students.length,
+                    droit: totalDroitClasse,
+                    paye: totalPayeClasse,
+                    reste: resteClasse
+                });
+                
                 html += `</tbody></table></div>`;
             });
 
+            // Construction du tableau récapitulatif
+            html += `
+                <div class="mt-5 mb-4">
+                    <h5 class="text-center fw-bold text-decoration-underline mb-3">RÉCAPITULATIF GÉNÉRAL</h5>
+                    <table class="recap-table">
+                        <thead>
+                            <tr>
+                                <th>Classe</th>
+                                <th>Cycle</th>
+                                <th>Effectif</th>
+                                <th>Droit Dû Total (FCFA)</th>
+                                <th>Total Payé (FCFA)</th>
+                                <th>Reste à Recouvrer (FCFA)</th>
+                                <th>Taux de Recouvrement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            classesRecap.forEach(c => {
+                const tauxRecouvrement = c.droit > 0 ? ((c.paye / c.droit) * 100).toFixed(2) : 0;
+                html += `
+                    <tr>
+                        <td>${c.nom}</td>
+                        <td>${c.cycle}</td>
+                        <td style="text-align: center;">${c.effectif}</td>
+                        <td>${c.droit.toLocaleString()}</td>
+                        <td>${c.paye.toLocaleString()}</td>
+                        <td style="color: ${c.reste > 0 ? '#dc2626' : '#059669'}; font-weight: bold;">${c.reste.toLocaleString()}</td>
+                        <td style="text-align: center;">${tauxRecouvrement}%</td>
+                    </tr>
+                `;
+            });
+            
+            const tauxGlobal = totalDroitDuGlobal > 0 ? ((totalPayeGlobal / totalDroitDuGlobal) * 100).toFixed(2) : 0;
+            
+            html += `
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #d1d5db; font-weight: bold;">
+                                <td colspan="3" style="text-align: right;">TOTAUX GÉNÉRAUX :</td>
+                                <td>${totalDroitDuGlobal.toLocaleString()}</td>
+                                <td>${totalPayeGlobal.toLocaleString()}</td>
+                                <td style="color: ${(totalDroitDuGlobal - totalPayeGlobal) > 0 ? '#dc2626' : '#059669'};">${(totalDroitDuGlobal - totalPayeGlobal).toLocaleString()}</td>
+                                <td style="text-align: center;">${tauxGlobal}%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+
             const dateLongue = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
+            
+            // Ajouter la signature si elle existe
+            let signatureHtml = '';
+            if (signatureData) {
+                signatureHtml = `
+                    <div class="mt-3 text-center">
+                        <img src="${signatureData}" alt="Signature du comptable" class="signature-img" style="max-height:80px;">
+                    </div>
+                `;
+            }
+            
             html += `
                     <div class="mt-5 d-flex justify-content-between">
                         <div class="small text-muted italic">Généré le : ${dateLongue}</div>
                         <div class="text-center" style="width: 280px;">
                             <p class="m-0">Fait à <strong>${lieuSignature}</strong>, le ${new Date().toLocaleDateString('fr-FR', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                             <p class="fw-bold mt-2 text-decoration-underline">Le Comptable</p>
-                            <br><br><br>
+                            ${signatureHtml}
+                            <br>
                             <p class="fw-bold">${settings ? settings.identification.comptable.toUpperCase() : ""}</p>
                         </div>
                     </div>
@@ -505,6 +650,7 @@
         const AUTH_KEY = 'wicompta_auth_session';
         const CONFIG_KEY = 'wicompta_config_creds';
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
+        const SIGNATURE_KEY = 'wicompta_signature';
 
         window.onload = function() {
             checkAuth();

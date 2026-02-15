@@ -373,7 +373,7 @@
                 <div class="row g-4">
                     <h5 class="section-subtitle"><i class="bi bi-person-badge"></i>Administration & Signatures</h5>
                     <div class="col-md-6"><label class="form-label small text-muted">Comptable Responsable</label><input type="text" id="id_comptable" class="form-control" onchange="saveToLocalStorage()"></div>
-                    <div class="col-md-6"><label class="form-label small text-muted">Signature Autorisée</label><input type="file" class="form-control" accept="image/*"></div>
+                    <div class="col-md-6"><label class="form-label small text-muted">Signature Autorisée</label><input type="file" id="signatureFile" class="form-control" accept="image/*" onchange="handleSignatureUpload(this)"></div>
                 </div>
 
                 <hr class="my-5 opacity-25">
@@ -619,6 +619,7 @@
         const MASTER_DATA_KEY = 'wicompta_master_annual_data';
         const FINANCE_KEY = 'wicompta_finance_records';
         const AUTH_KEY = 'wicompta_auth_session';
+        const SIGNATURE_KEY = 'wicompta_signature';  // Nouvelle clé pour la signature
 
         // --- SYNCHRONISATION CLOUD ---
 
@@ -629,9 +630,10 @@
             const dataToSync = {
                 settings: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
                 students: JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}"),
-                master: JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}"), // 'master' et non 'masterData'
+                master: JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}"),
                 config: JSON.parse(localStorage.getItem('wicompta_config_creds') || "{}"),
-                identity: JSON.parse(localStorage.getItem('winTailor_identity') || "{}")
+                identity: JSON.parse(localStorage.getItem('winTailor_identity') || "{}"),
+                signature: localStorage.getItem(SIGNATURE_KEY) || null   // Ajout de la signature
             };
 
             const activeAnnee = getActiveYear();
@@ -654,6 +656,7 @@
                     if (cloudData.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData.settings));
                     if (cloudData.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(cloudData.students));
                     if (cloudData.master) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(cloudData.master));
+                    if (cloudData.signature) localStorage.setItem(SIGNATURE_KEY, cloudData.signature);   // Restauration signature
                     
                     Object.keys(cloudData).forEach(key => {
                         if (key.startsWith(FINANCE_KEY)) {
@@ -840,6 +843,28 @@
             updateExonSelects();
             updateChargeClassesSelect();
             updateCounters();
+
+            // Si une signature est stockée, on pourrait éventuellement afficher un indicateur
+            const signature = localStorage.getItem(SIGNATURE_KEY);
+            if(signature) {
+                // Optionnel : afficher un message ou une icône pour indiquer qu'une signature est enregistrée
+                // On ne modifie pas l'input pour des raisons de sécurité
+            }
+        }
+
+        // --- Gestion de l'upload de la signature ---
+        function handleSignatureUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const signatureData = e.target.result; // base64 data URL
+                    localStorage.setItem(SIGNATURE_KEY, signatureData);
+                    syncToCloud(); // synchronisation immédiate
+                    showSuccess("Signature enregistrée avec succès");
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         function ajouterOption(id, label) {
@@ -1177,6 +1202,7 @@
                 students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
                 annualData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY)),
                 financeRecords: financeRecords,
+                signature: localStorage.getItem(SIGNATURE_KEY),  // Inclure la signature
                 date: new Date().toISOString() 
             };
             const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
@@ -1193,6 +1219,7 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data.settings));
                 localStorage.setItem(STUDENTS_KEY, JSON.stringify(data.students));
                 if(data.annualData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(data.annualData));
+                if(data.signature) localStorage.setItem(SIGNATURE_KEY, data.signature);
                 
                 // Restaurer les données financières
                 if (data.financeRecords) {
@@ -1208,7 +1235,7 @@
         }
 
         async function reinitialiserApplication() { 
-            if(confirm("⚠️ SUPPRESSION TOTALE ⚠️\n\nCette action va effacer définitivement :\n- Toutes les classes et élèves\n- Tous les frais et tarifs\n- Toutes les exonérations\n- Tous les paiements et historiques financiers\n- Tous les paramètres de configuration\n\nLes données cloud seront également supprimées.\n\nVoulez-vous vraiment réinitialiser COMPLÈTEMENT l'application ?")) { 
+            if(confirm("⚠️ SUPPRESSION TOTALE ⚠️\n\nCette action va effacer définitivement :\n- Toutes les classes et élèves\n- Tous les frais et tarifs\n- Toutes les exonérations\n- Tous les paiements et historiques financiers\n- Tous les paramètres de configuration\n- La signature enregistrée\n\nLes données cloud seront également supprimées.\n\nVoulez-vous vraiment réinitialiser COMPLÈTEMENT l'application ?")) { 
                 
                 // 1️⃣ SUPPRIMER TOUTES LES DONNÉES LOCALSTORAGE
                 localStorage.clear();
