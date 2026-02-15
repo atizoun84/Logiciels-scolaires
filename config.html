@@ -624,43 +624,44 @@
 
         function syncToCloud() {
             if (!window.fbDB) return;
-            const data = {
-                settings: JSON.parse(localStorage.getItem(STORAGE_KEY)),
-                students: JSON.parse(localStorage.getItem(STUDENTS_KEY)),
-                masterData: JSON.parse(localStorage.getItem(MASTER_DATA_KEY))
+            
+            // Structure identique à celle de maj_eleve.html et index.html
+            const dataToSync = {
+                settings: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+                students: JSON.parse(localStorage.getItem(STUDENTS_KEY) || "{}"),
+                master: JSON.parse(localStorage.getItem(MASTER_DATA_KEY) || "{}"), // 'master' et non 'masterData'
+                config: JSON.parse(localStorage.getItem('wicompta_config_creds') || "{}"),
+                identity: JSON.parse(localStorage.getItem('winTailor_identity') || "{}")
             };
-            
-            // Ajouter les données financières de toutes les années
-            const financeData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(FINANCE_KEY)) {
-                    financeData[key] = JSON.parse(localStorage.getItem(key));
-                }
+
+            const activeAnnee = getActiveYear();
+            if (activeAnnee) {
+                const finKey = `${FINANCE_KEY}_${activeAnnee.replace(/\s+/g, '_')}`;
+                dataToSync[finKey] = JSON.parse(localStorage.getItem(finKey) || "{}");
             }
-            data.financeRecords = financeData;
             
-            window.fbSet(window.fbRef(window.fbDB, 'config_global'), data)
+            // Utiliser cloud_storage/ au lieu de config_global
+            window.fbUpdate(window.fbRef(window.fbDB, 'cloud_storage/'), dataToSync)
                 .catch(e => console.error("Erreur Sync Cloud:", e));
         }
 
         function syncFromCloud() {
             if (!window.fbDB) return;
-            window.fbOnValue(window.fbRef(window.fbDB, 'config_global'), (snapshot) => {
+            // Ecouter cloud_storage/ au lieu de config_global
+            window.fbOnValue(window.fbRef(window.fbDB, 'cloud_storage/'), (snapshot) => {
                 const cloudData = snapshot.val();
                 if (cloudData) {
                     if (cloudData.settings) localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData.settings));
                     if (cloudData.students) localStorage.setItem(STUDENTS_KEY, JSON.stringify(cloudData.students));
-                    if (cloudData.masterData) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(cloudData.masterData));
+                    if (cloudData.master) localStorage.setItem(MASTER_DATA_KEY, JSON.stringify(cloudData.master));
                     
-                    // Restaurer les données financières
-                    if (cloudData.financeRecords) {
-                        Object.keys(cloudData.financeRecords).forEach(key => {
-                            localStorage.setItem(key, JSON.stringify(cloudData.financeRecords[key]));
-                        });
-                    }
+                    Object.keys(cloudData).forEach(key => {
+                        if (key.startsWith(FINANCE_KEY)) {
+                            localStorage.setItem(key, JSON.stringify(cloudData[key]));
+                        }
+                    });
                     
-                    loadFromLocalStorage(true); // Recharger l'UI sans boucle infinie
+                    loadFromLocalStorage(true);
                 }
             }, { onlyOnce: true });
         }
@@ -1206,7 +1207,7 @@
             reader.readAsText(input.files[0]);
         }
 
-        function reinitialiserApplication() { 
+        async function reinitialiserApplication() { 
             if(confirm("⚠️ SUPPRESSION TOTALE ⚠️\n\nCette action va effacer définitivement :\n- Toutes les classes et élèves\n- Tous les frais et tarifs\n- Toutes les exonérations\n- Tous les paiements et historiques financiers\n- Tous les paramètres de configuration\n\nLes données cloud seront également supprimées.\n\nVoulez-vous vraiment réinitialiser COMPLÈTEMENT l'application ?")) { 
                 
                 // 1️⃣ SUPPRIMER TOUTES LES DONNÉES LOCALSTORAGE
@@ -1214,26 +1215,17 @@
                 
                 // 2️⃣ SUPPRIMER TOUTES LES DONNÉES CLOUD
                 if(window.fbDB) {
-                    // Supprimer le nœud principal config_global
-                    window.fbRemove(window.fbRef(window.fbDB, 'config_global'))
-                        .then(() => {
-                            console.log("✅ Données cloud (config_global) supprimées avec succès");
-                        })
-                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (config_global):", e));
-                    
-                    // Supprimer également les données financières stockées séparément (si existantes)
-                    window.fbRemove(window.fbRef(window.fbDB, 'finances'))
-                        .then(() => {
-                            console.log("✅ Données cloud (finances) supprimées avec succès");
-                        })
-                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (finances):", e));
-                    
-                    // Supprimer également cloud_storage utilisé par d'autres pages
-                    window.fbRemove(window.fbRef(window.fbDB, 'cloud_storage'))
-                        .then(() => {
-                            console.log("✅ Données cloud (cloud_storage) supprimées avec succès");
-                        })
-                        .catch(e => console.error("❌ Erreur lors de la suppression cloud (cloud_storage):", e));
+                    try {
+                        // On attend (await) que toutes les suppressions soient confirmées par le serveur
+                        await Promise.all([
+                            window.fbRemove(window.fbRef(window.fbDB, 'config_global')),
+                            window.fbRemove(window.fbRef(window.fbDB, 'finances')),
+                            window.fbRemove(window.fbRef(window.fbDB, 'cloud_storage'))
+                        ]);
+                        console.log("✅ Données cloud supprimées avec succès");
+                    } catch(e) {
+                        console.error("❌ Erreur lors de la suppression cloud:", e);
+                    }
                 }
                 
                 // 3️⃣ REINITIALISER L'ÉTAT LOCAL DE L'APPLICATION
@@ -1273,9 +1265,7 @@
                 showSuccess("✅ Application complètement réinitialisée !\nToutes les données ont été effacées.", "Réinitialisation Réussie");
                 
                 // 6️⃣ RECHARGEMENT APRÈS UN COURT DÉLAI
-                setTimeout(() => {
-                    location.reload(); 
-                }, 2000);
+                setTimeout(() => { location.reload(); }, 1500);
             } 
         }
 
